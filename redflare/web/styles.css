@@ -66,10 +66,11 @@ button { color: inherit; }
 #graph.panning { cursor: grabbing; }
 #viewport { transform-origin: 0 0; }
 #arrow path { fill: rgba(132,145,163,.55); }
-.edge { stroke: rgba(132,145,163,.28); stroke-width: 1.1; marker-end: url(#arrow); transition: opacity .15s, stroke .15s; }
+.edge { stroke: rgba(132,145,163,.22); stroke-width: 1.1; marker-end: url(#arrow); transition: opacity .15s, stroke .15s; }
 .edge.focused { stroke: var(--cyan); stroke-width: 2; opacity: .9; }
 .edge.dimmed { opacity: .07; }
-.edge-label { fill: #667386; font: 8px ui-monospace, monospace; pointer-events: none; }
+.edge-label { fill: #8a9aae; font: 8px ui-monospace, monospace; pointer-events: none; opacity: 0; transition: opacity .15s; paint-order: stroke; stroke: #07090d; stroke-width: 3px; }
+.edge-label.focused { opacity: 1; }
 .node { cursor: pointer; transition: opacity .15s; }
 .node.dimmed { opacity: .1; }
 .node.match .node-ring { stroke: white; stroke-width: 3; filter: url(#glow); }
@@ -78,6 +79,10 @@ button { color: inherit; }
 .node-ring { fill: none; stroke: transparent; stroke-width: 0; }
 .node-icon { fill: #071015; font-size: 10px; font-weight: 900; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
 .node-label { fill: #dce3ec; font: 10px ui-sans-serif, system-ui; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: #07090d; stroke-width: 3px; stroke-linejoin: round; }
+.graph-stage.dense .node[data-type="endpoint"] .node-label { opacity: 0; }
+.graph-stage.dense .node[data-type="endpoint"]:hover .node-label,
+.graph-stage.dense .node[data-type="endpoint"].focused .node-label,
+.graph-stage.dense .node[data-type="endpoint"].match .node-label { opacity: 1; }
 .node-badge { fill: #071015; stroke: #ff4055; stroke-width: 1; }
 .node-badge-text { fill: #ff6b7b; font: 8px ui-monospace, monospace; text-anchor: middle; dominant-baseline: central; }
 .tooltip { position: fixed; display: none; max-width: 340px; padding: 9px 11px; border: 1px solid #405067; border-radius: 7px; background: rgba(7,10,15,.97); box-shadow: 0 10px 30px rgba(0,0,0,.45); color: #dce3ec; pointer-events: none; z-index: 20; white-space: pre-line; font-size: 11px; }
@@ -98,4 +103,5 @@ button { color: inherit; }
 .relation { display: flex; align-items: center; gap: 7px; padding: 5px 0; color: #b9c4d2; cursor: pointer; }
 .relation:hover { color: var(--cyan); }
 .relation-type { color: #68778b; font-size: 9px; text-transform: uppercase; }
+.shortcut-hint { color: #566476; font-size: 9px; margin-left: 4px; }
 @media (max-width: 1050px) { .workspace { grid-template-columns: 210px minmax(360px,1fr) 280px; } }

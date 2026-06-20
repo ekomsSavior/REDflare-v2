@@ -4,6 +4,7 @@ import json
 import tempfile
 import threading
 import unittest
+from importlib.resources import files
 from pathlib import Path
 from urllib.request import urlopen
 
@@ -108,6 +109,14 @@ class VisualizeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
                 build_visual_graph(directory)
+
+    def test_visual_assets_keep_node_clicks_on_the_node(self):
+        app = files("redflare.web").joinpath("app.js").read_text(encoding="utf-8")
+        styles = files("redflare.web").joinpath("styles.css").read_text(encoding="utf-8")
+        self.assertIn("group.setPointerCapture(event.pointerId)", app)
+        self.assertIn("selectNode(node.id)", app)
+        self.assertIn("centerOnNode(node)", app)
+        self.assertIn('.graph-stage.dense .node[data-type="endpoint"] .node-label', styles)
 
 
 if __name__ == "__main__":

@@ -28,6 +28,9 @@ const state = {
   transform: { x: 0, y: 0, k: 1 },
   animation: null,
   dragged: null,
+  dragStart: null,
+  dragMoved: false,
+  suppressClick: false,
   panning: null,
 };
 
@@ -118,6 +121,11 @@ function bindControls() {
   });
   const search = document.getElementById("graph-search");
   search.addEventListener("input", () => { state.search = search.value.trim().toLowerCase(); updateSearch(); renderClasses(); });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") clearFocus();
+    if (event.key === "/" && document.activeElement !== search) { event.preventDefault(); search.focus(); }
+    if (event.key.toLowerCase() === "f" && document.activeElement !== search) fitView(true);
+  });
 
   svg.addEventListener("wheel", event => {
     event.preventDefault();
@@ -138,6 +146,7 @@ function bindControls() {
   });
   svg.addEventListener("pointermove", event => {
     if (state.dragged) {
+      if (state.dragStart && Math.hypot(event.clientX - state.dragStart.x, event.clientY - state.dragStart.y) > 4) state.dragMoved = true;
       const point = svgPoint(event.clientX, event.clientY);
       state.dragged.x = point.x;
       state.dragged.y = point.y;
@@ -152,10 +161,13 @@ function bindControls() {
   });
   svg.addEventListener("pointerup", event => {
     if (state.dragged) { state.dragged.fx = null; state.dragged.fy = null; }
+    state.suppressClick = state.dragMoved;
     state.dragged = null;
+    state.dragStart = null;
+    state.dragMoved = false;
     state.panning = null;
     svg.classList.remove("panning");
-    try { svg.releasePointerCapture(event.pointerId); } catch (_) {}
+    try { if (svg.hasPointerCapture(event.pointerId)) svg.releasePointerCapture(event.pointerId); } catch (_) {}
   });
   svg.addEventListener("click", event => { if (event.target === svg) clearFocus(); });
   new ResizeObserver(() => { if (state.layout !== "force") applyLayout(state.layout, true); }).observe(svg);
@@ -175,6 +187,7 @@ function applyLayout(layout, preserveTransform = false) {
   const graph = visibleGraph();
   document.getElementById("visible-count").textContent = `${graph.nodes.length} nodes · ${graph.edges.length} edges`;
   document.getElementById("empty-state").classList.toggle("hidden", graph.nodes.length > 0);
+  document.getElementById("graph-stage").classList.toggle("dense", graph.nodes.length > 75);
   if (layout === "tree") layoutTree(graph.nodes, graph.edges);
   else if (layout === "radial") layoutRadial(graph.nodes, graph.edges);
   else startForce(graph.nodes, graph.edges);
@@ -312,7 +325,7 @@ function renderGraph(nodes, edges) {
   for (const node of nodes) {
     const style = TYPE_STYLE[node.type] || { color: "#8491a3", size: 10, icon: "?" };
     const color = node.severity ? SEVERITY_COLOR[node.severity] || style.color : style.color;
-    const group = el("g", { class: "node", "data-id": node.id, tabindex: "0" });
+    const group = el("g", { class: "node", "data-id": node.id, "data-type": node.type, tabindex: "0", role: "button", "aria-label": `${node.type}: ${node.label}` });
     group.__data__ = node;
     group.append(el("circle", { class: "node-ring", r: style.size + 5 }));
     group.append(el("circle", { class: "node-circle", r: style.size, fill: color }));
@@ -325,9 +338,16 @@ function renderGraph(nodes, edges) {
     group.addEventListener("pointerdown", event => {
       event.stopPropagation();
       state.dragged = node;
-      svg.setPointerCapture(event.pointerId);
+      state.dragStart = { x: event.clientX, y: event.clientY };
+      state.dragMoved = false;
+      group.setPointerCapture(event.pointerId);
     });
-    group.addEventListener("click", event => { event.stopPropagation(); selectNode(node.id); });
+    group.addEventListener("click", event => {
+      event.stopPropagation();
+      if (state.suppressClick) { state.suppressClick = false; return; }
+      selectNode(node.id);
+    });
+    group.addEventListener("dblclick", event => { event.stopPropagation(); selectNode(node.id); centerOnNode(node); });
     group.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") selectNode(node.id); });
     group.addEventListener("mouseenter", event => showTooltip(event, node));
     group.addEventListener("mousemove", moveTooltip);
@@ -383,6 +403,10 @@ function renderClasses() {
     const connected = state.selected && (edge.source === state.selected || edge.target === state.selected);
     line.classList.toggle("focused", Boolean(connected));
     line.classList.toggle("dimmed", state.selected !== null && !connected);
+  });
+  edgeLabelLayer.querySelectorAll(".edge-label").forEach(label => {
+    const edge = label.__data__;
+    label.classList.toggle("focused", Boolean(state.selected && (edge.source === state.selected || edge.target === state.selected)));
   });
 }
 
@@ -465,6 +489,18 @@ function fitView(animate = true) {
   const start = { ...state.transform }, started = performance.now();
   const frame = now => {
     const t = Math.min(1, (now - started) / 280), eased = 1 - Math.pow(1 - t, 3);
+    state.transform = { x: lerp(start.x, next.x, eased), y: lerp(start.y, next.y, eased), k: lerp(start.k, next.k, eased) };
+    applyTransform(); if (t < 1) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+function centerOnNode(node) {
+  const { width, height } = dimensions();
+  const next = { x: width / 2 - node.x * Math.max(1.35, state.transform.k), y: height / 2 - node.y * Math.max(1.35, state.transform.k), k: Math.max(1.35, state.transform.k) };
+  const start = { ...state.transform }, started = performance.now();
+  const frame = now => {
+    const t = Math.min(1, (now - started) / 240), eased = 1 - Math.pow(1 - t, 3);
     state.transform = { x: lerp(start.x, next.x, eased), y: lerp(start.y, next.y, eased), k: lerp(start.k, next.k, eased) };
     applyTransform(); if (t < 1) requestAnimationFrame(frame);
   };
