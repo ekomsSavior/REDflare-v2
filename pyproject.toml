@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "redflare"
+version = "0.1.0"
+description = "Authorized web application reconnaissance and assessment orchestrator"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "ek0ms savi0r"}]
+
+[project.scripts]
+redflare = "redflare.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["redflare*"]

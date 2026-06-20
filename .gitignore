@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+runs*/
+dist/
+build/
+
+# Local assessment inputs may contain client scope information.
+kctcs-paths.txt
+kctcs-scope.json
