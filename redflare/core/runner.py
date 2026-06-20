@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from redflare.modules.base import Module, ModuleContext
 from .correlation import correlate
 from .models import ModuleResult, Target
+from .standards import enrich_finding, registry_document
 from .storage import RunStore
 
 
@@ -44,13 +45,20 @@ class Runner:
                         errors=[f"{type(exc).__name__}: {exc}"],
                     )]
                 for result in target_results:
+                    for finding in result.findings:
+                        enrich_finding(finding)
                     results.append(result)
                     self.store.write_result(result)
         correlated = correlate(self.store.run_id, results)
         for result in correlated:
+            for finding in result.findings:
+                enrich_finding(finding)
             results.append(result)
             self.store.write_result(result)
-        return results, self.store.finalize(results)
+        surface_graph = self.context.surface_graph.snapshot()
+        self.store.write_surface_graph(surface_graph)
+        self.store.write_test_registry(registry_document())
+        return results, self.store.finalize(results, surface_graph=surface_graph)
 
     def _run_target_pipeline(self, target: Target) -> list[ModuleResult]:
         results = []

@@ -1,6 +1,18 @@
-# REDflare
+# REDflare v2
 
-REDflare is a scope-first orchestration framework for authorized web application reconnaissance and security assessment. It provides a common target model, module interface, evidence store, finding schema, correlation layer, and reports while preserving its source tools as independent projects.
+REDflare v2 is a scope-first orchestration framework for authorized web application reconnaissance and security assessment. It adds a shared attack-surface graph and a standards-backed test registry while preserving the original REDflare project unchanged.
+
+## What v2 adds
+
+- A bounded same-origin crawler for links, forms, and execution paths
+- A deduplicated endpoint inventory shared by native modules and adapters
+- Form parameter, HTTP method, content type, and authentication-requirement mapping
+- JavaScript route extraction from same-origin script assets
+- OpenAPI 2.x and 3.x endpoint and parameter ingestion
+- Explicit opt-in GraphQL schema introspection with bounded response sizes
+- Browser request/response ingestion from GATEkeeper reports
+- Stable `RFV2-*` test IDs mapped to OWASP WSTG v4.2, ASVS 5.0.0, CWE, and OWASP API Security 2023
+- Per-run `attack_surface.json` and `test_registry.json` artifacts
 
 ## Current capabilities
 
@@ -89,10 +101,28 @@ timing, and artifact paths followed by consolidated, deduplicated findings.
 ```bash
 ./bin/redflare modules
 ./bin/redflare doctor
+./bin/redflare tests
 
 ./bin/redflare scan http://127.0.0.1:8000 \
   --authorized \
   --profile web
+```
+
+Tune application mapping limits explicitly:
+
+```bash
+./bin/redflare scan https://authorized.example \
+  --authorized --allow-public --profile web \
+  --max-crawl-pages 50 --max-crawl-depth 3 \
+  --max-scripts 30 --max-schema-documents 10
+```
+
+GraphQL introspection is disabled by default and requires a separate opt-in:
+
+```bash
+./bin/redflare scan https://authorized.example \
+  --authorized --allow-public --profile web \
+  --graphql-introspection
 ```
 
 Run repository intelligence through the existing REAPER binary:
@@ -135,8 +165,10 @@ Use a JSON scope file to prevent accidental target drift:
 | Profile | Modules |
 |---|---|
 | `quick` | passive recon, HTTP headers |
-| `web` | quick plus path discovery |
+| `web` | quick plus surface analysis, application mapping, and path discovery |
 | `full` | web plus GATEkeeper and noauth_finder adapters |
+
+Both `web` and `full` include application mapping. The `full` profile additionally merges browser-observed network traffic into the shared graph.
 
 Path discovery accepts any user-provided wordlist:
 
@@ -157,6 +189,8 @@ runs/run_YYYYMMDD_HHMMSS/
 ├── findings.jsonl
 ├── summary.json
 ├── report.html
+├── attack_surface.json
+├── test_registry.json
 ├── modules/
 └── artifacts/
 ```
@@ -172,11 +206,14 @@ python3 -m unittest discover -v
 python3 -m compileall -q redflare tests
 ```
 
+## Standards registry
+
+`redflare tests` prints the machine-readable registry. Every emitted finding from a registered check receives a stable test ID and versioned standards metadata. The registry intentionally pins WSTG v4.2 and ASVS 5.0.0 identifiers so future standards releases cannot silently change report meaning.
+
 ## Roadmap
 
 - Parse GATEkeeper and noauth_finder reports into native findings
 - Add a REAPER global-intelligence adapter
-- Add form, API schema, JavaScript endpoint, and authentication-context modules
 - Add SQLite indexing, SARIF, and a local dashboard
 - Add resume/checkpoint support and richer cross-module correlation
 - Add signed plugin manifests and module capability declarations

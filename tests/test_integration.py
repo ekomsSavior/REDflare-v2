@@ -66,6 +66,8 @@ class IntegrationTests(unittest.TestCase):
             self.assertGreaterEqual(summary["findings"], 3)
             self.assertTrue((store.root / "report.html").exists())
             self.assertTrue((store.root / "summary.json").exists())
+            self.assertTrue((store.root / "attack_surface.json").exists())
+            self.assertTrue((store.root / "test_registry.json").exists())
             report = (store.root / "report.html").read_text(encoding="utf-8")
             self.assertIn("HTTP HEADERS ASSESSMENT", report)
             self.assertIn("PATH DISCOVERY ASSESSMENT", report)

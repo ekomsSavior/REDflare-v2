@@ -4,6 +4,7 @@ import ssl
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 
 @dataclass
@@ -14,11 +15,41 @@ class HTTPResponse:
     body: bytes
 
 
-def request(url: str, timeout: float, method: str = "GET", max_body: int = 1_000_000) -> HTTPResponse:
-    req = urllib.request.Request(url, method=method, headers={"User-Agent": "REDflare/0.1 authorized-assessment"})
+class ScopedRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def __init__(self, allowed_origin: tuple[str, int]):
+        super().__init__()
+        self.allowed_origin = allowed_origin
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        parsed = urlparse(newurl)
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        if (parsed.hostname, port) != self.allowed_origin:
+            return None
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def request(
+    url: str,
+    timeout: float,
+    method: str = "GET",
+    max_body: int = 1_000_000,
+    *,
+    data: bytes | None = None,
+    headers: dict[str, str] | None = None,
+    allowed_origin: tuple[str, int] | None = None,
+) -> HTTPResponse:
+    request_headers = {"User-Agent": "REDflare-v2/2.0 authorized-assessment"}
+    request_headers.update(headers or {})
+    req = urllib.request.Request(url, data=data, method=method, headers=request_headers)
     context = ssl.create_default_context()
     try:
-        response = urllib.request.urlopen(req, timeout=timeout, context=context)
+        if allowed_origin:
+            opener = urllib.request.build_opener(
+                ScopedRedirectHandler(allowed_origin), urllib.request.HTTPSHandler(context=context)
+            )
+            response = opener.open(req, timeout=timeout)
+        else:
+            response = urllib.request.urlopen(req, timeout=timeout, context=context)
     except urllib.error.HTTPError as exc:
         response = exc
     with response:

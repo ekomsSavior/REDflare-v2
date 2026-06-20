@@ -40,6 +40,9 @@ class Finding:
     tags: list[str] = field(default_factory=list)
     timestamp: str = field(default_factory=utc_now)
     id: str = ""
+    test_id: str = ""
+    standards: dict[str, list[dict[str, str]]] = field(default_factory=dict)
+    remediation: str = ""
 
     def __post_init__(self) -> None:
         if not self.id:

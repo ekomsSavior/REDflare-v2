@@ -3,15 +3,16 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "redflare"
-version = "0.1.0"
-description = "Authorized web application reconnaissance and assessment orchestrator"
+name = "redflare-v2"
+version = "2.0.0"
+description = "Scope-first web assessment framework with a shared attack-surface graph"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [{name = "ek0ms savi0r"}]
 
 [project.scripts]
 redflare = "redflare.cli:main"
+redflare-v2 = "redflare.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["redflare*"]

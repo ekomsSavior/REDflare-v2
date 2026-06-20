@@ -86,6 +86,10 @@ def interactive_arguments() -> list[str] | None:
             arguments.extend(["--wordlist", wordlist])
         arguments.extend(["--rate", prompt("Path requests per second", "1")])
         arguments.extend(["--max-paths", prompt("Maximum paths per target", "100")])
+        arguments.extend(["--max-crawl-pages", prompt("Maximum pages to map per target", "30")])
+        arguments.extend(["--max-crawl-depth", prompt("Maximum crawler depth", "2")])
+        if yes_no("Permit bounded GraphQL schema introspection on in-scope endpoints", False):
+            arguments.append("--graphql-introspection")
 
     if profile == "full":
         repositories = prompt(

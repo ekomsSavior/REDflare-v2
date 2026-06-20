@@ -7,6 +7,7 @@ from pathlib import Path
 
 from . import __version__
 from .core.scope import ScopeError, ScopePolicy, normalize_target
+from .core.standards import registry_document
 from .core.runner import Runner
 from .core.storage import RunStore
 from .modules.adapters import adapter_health, run_reaper
@@ -23,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("modules", help="List profiles and modules")
     sub.add_parser("doctor", help="Check source-tool adapters")
+    sub.add_parser("tests", help="List stable test IDs and standards mappings")
 
     intel = sub.add_parser("intel", help="Run repository secret intelligence through REAPER")
     intel.add_argument("--repo", action="append", required=True, help="Authorized GitHub repository URL; repeatable")
@@ -39,6 +41,15 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--output", default="runs", help="Base run output directory")
     scan.add_argument("--wordlist", help="Path wordlist for the web profile")
     scan.add_argument("--max-paths", type=int, default=100)
+    scan.add_argument("--max-crawl-pages", type=int, default=30)
+    scan.add_argument("--max-crawl-depth", type=int, default=2)
+    scan.add_argument("--max-scripts", type=int, default=20)
+    scan.add_argument("--max-schema-documents", type=int, default=8)
+    scan.add_argument(
+        "--graphql-introspection",
+        action="store_true",
+        help="Explicitly permit bounded GraphQL schema introspection on in-scope endpoints",
+    )
     scan.add_argument("--rate", type=float, default=2.0, help="Path requests per second")
     scan.add_argument("--timeout", type=float, default=8.0)
     scan.add_argument("--workers", type=int, default=2)
@@ -58,6 +69,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "doctor":
         print(json.dumps({"adapters": adapter_health()}, indent=2))
+        return 0
+    if args.command == "tests":
+        print(json.dumps(registry_document(), indent=2))
         return 0
     if args.command == "intel":
         if not args.authorized:
@@ -109,6 +123,11 @@ def main(argv: list[str] | None = None) -> int:
         rate=args.rate,
         wordlist=args.wordlist,
         max_paths=max(1, args.max_paths),
+        max_crawl_pages=max(1, args.max_crawl_pages),
+        max_crawl_depth=max(0, args.max_crawl_depth),
+        max_scripts=max(0, args.max_scripts),
+        max_schema_documents=max(0, args.max_schema_documents),
+        graphql_introspection=args.graphql_introspection,
         allow_public=args.allow_public,
         reporter=console.emit,
     )

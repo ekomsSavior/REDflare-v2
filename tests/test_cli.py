@@ -31,6 +31,9 @@ class CLITests(unittest.TestCase):
             "",                          # no wordlist
             "1",                         # rate
             "25",                        # max paths
+            "30",                        # max crawl pages
+            "2",                         # max crawl depth
+            "no",                        # no GraphQL introspection
             "https://github.com/o/r",    # repository
         ],
     )

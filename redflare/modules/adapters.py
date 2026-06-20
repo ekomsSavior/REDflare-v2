@@ -139,6 +139,14 @@ class GatekeeperAdapter(CommandAdapter):
             return
         data = json.loads(report.read_text(encoding="utf-8"))
         result.observations["report"] = data
+        browser_endpoints = ingest_browser_traffic(target, context, data)
+        result.artifacts.append(str(report))
+        capture = output / "network_capture.json"
+        if capture.exists():
+            capture_data = json.loads(capture.read_text(encoding="utf-8"))
+            browser_endpoints = ingest_browser_traffic(target, context, capture_data)
+            result.artifacts.append(str(capture))
+        result.observations["surface_graph_endpoints_added"] = browser_endpoints
         missing = [
             name
             for name, details in data.get("security_headers", {}).items()
@@ -322,3 +330,49 @@ def normalize_repository(value: str) -> str:
             f"invalid GitHub repository {value!r}; expected owner/repository or a GitHub URL"
         )
     return f"https://github.com/{parts[0]}/{parts[1]}"
+
+
+def ingest_browser_traffic(target: Target, context: ModuleContext, payload: object) -> int:
+    """Merge request/response-shaped browser records without retaining credentials."""
+    added: set[tuple[str, str]] = set()
+
+    def walk(value: object):
+        if isinstance(value, dict):
+            yield value
+            for child in value.values():
+                yield from walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from walk(child)
+
+    for item in walk(payload):
+        request_data = item.get("request") if isinstance(item.get("request"), dict) else item
+        response_data = item.get("response") if isinstance(item.get("response"), dict) else item
+        url = request_data.get("url") or item.get("request_url")
+        if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+            continue
+        parsed = urlparse(url)
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        if parsed.hostname != target.host or port != target.port:
+            continue
+        method = str(request_data.get("method") or item.get("method") or "GET").upper()
+        headers = request_data.get("headers") if isinstance(request_data.get("headers"), dict) else {}
+        header_names = {str(name).lower() for name in headers}
+        authentication = "observed" if {"authorization", "cookie"} & header_names else "unknown"
+        response_headers = response_data.get("headers") if isinstance(response_data.get("headers"), dict) else {}
+        content_type = next(
+            (str(value) for name, value in response_headers.items() if str(name).lower() == "content-type"),
+            None,
+        )
+        status = response_data.get("status") or item.get("status")
+        context.surface_graph.add_endpoint(
+            target.url,
+            url,
+            method=method,
+            source="browser-traffic",
+            authentication=authentication,
+            content_type=content_type,
+            status=int(status) if str(status).isdigit() else None,
+        )
+        added.add((url, method))
+    return len(added)

@@ -38,7 +38,13 @@ class RunStore:
             for finding in result.findings:
                 handle.write(json.dumps(finding.to_dict(), sort_keys=True) + "\n")
 
-    def finalize(self, results: Iterable[ModuleResult]) -> dict:
+    def write_surface_graph(self, graph: dict) -> None:
+        self._write_json(self.root / "attack_surface.json", graph)
+
+    def write_test_registry(self, registry: dict) -> None:
+        self._write_json(self.root / "test_registry.json", registry)
+
+    def finalize(self, results: Iterable[ModuleResult], surface_graph: dict | None = None) -> dict:
         results = list(results)
         findings = deduplicate_findings(
             [finding for result in results for finding in result.findings]
@@ -54,6 +60,7 @@ class RunStore:
             "findings": len(findings),
             "by_severity": count_by(finding.severity for finding in findings),
             "by_module": count_by(finding.module for finding in findings),
+            "attack_surface": (surface_graph or {}).get("summary", {}),
         }
         self._write_json(self.root / "summary.json", summary)
         (self.root / "report.html").write_text(
@@ -111,6 +118,7 @@ def render_html(
         rows.append(
             "<tr>"
             f"<td>{html.escape(finding.severity)}</td>"
+            f"<td>{html.escape(finding.test_id)}</td>"
             f"<td>{html.escape(finding.module)}</td>"
             f"<td>{html.escape(finding.target)}</td>"
             f"<td>{html.escape(finding.title)}</td>"
@@ -155,4 +163,5 @@ table{{border-collapse:collapse;width:100%}}th,td{{padding:.6rem;border:1px soli
 </style></head>
 <body><h1>REDflare Final Assessment Report</h1><section class="summary"><h2>Run summary</h2><pre>{html.escape(json.dumps(summary, indent=2))}</pre></section>
 {''.join(assessments)}
-<section class="summary"><h2>Consolidated findings</h2><table><thead><tr><th>Severity</th><th>Module</th><th>Target</th><th>Finding</th><th>Description</th></tr></thead><tbody>{''.join(rows)}</tbody></table></section></body></html>"""
+<section class="summary"><h2>Assessment artifacts</h2><ul><li><code>attack_surface.json</code></li><li><code>test_registry.json</code></li></ul></section>
+<section class="summary"><h2>Consolidated findings</h2><table><thead><tr><th>Severity</th><th>Test ID</th><th>Module</th><th>Target</th><th>Finding</th><th>Description</th></tr></thead><tbody>{''.join(rows)}</tbody></table></section></body></html>"""
