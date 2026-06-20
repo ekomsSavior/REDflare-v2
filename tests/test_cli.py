@@ -34,6 +34,7 @@ class CLITests(unittest.TestCase):
             "30",                        # max crawl pages
             "2",                         # max crawl depth
             "no",                        # no GraphQL introspection
+            "75",                        # max exposure endpoints
             "https://github.com/o/r",    # repository
         ],
     )

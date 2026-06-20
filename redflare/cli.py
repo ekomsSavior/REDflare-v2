@@ -45,6 +45,9 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--max-crawl-depth", type=int, default=2)
     scan.add_argument("--max-scripts", type=int, default=20)
     scan.add_argument("--max-schema-documents", type=int, default=8)
+    scan.add_argument("--max-exposure-endpoints", type=int, default=75)
+    scan.add_argument("--max-exposure-findings", type=int, default=100)
+    scan.add_argument("--max-exposure-body-bytes", type=int, default=2_000_000)
     scan.add_argument(
         "--graphql-introspection",
         action="store_true",
@@ -127,6 +130,9 @@ def main(argv: list[str] | None = None) -> int:
         max_crawl_depth=max(0, args.max_crawl_depth),
         max_scripts=max(0, args.max_scripts),
         max_schema_documents=max(0, args.max_schema_documents),
+        max_exposure_endpoints=max(1, args.max_exposure_endpoints),
+        max_exposure_findings=max(1, args.max_exposure_findings),
+        max_exposure_body_bytes=max(1_024, args.max_exposure_body_bytes),
         graphql_introspection=args.graphql_introspection,
         allow_public=args.allow_public,
         reporter=console.emit,

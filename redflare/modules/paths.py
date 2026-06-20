@@ -51,6 +51,14 @@ class PathDiscoveryModule(Module):
                     continue
                 hit = {"path": path, "url": url, "status": response.status, "bytes": len(response.body)}
                 hits.append(hit)
+                context.surface_graph.add_endpoint(
+                    target.url,
+                    url,
+                    method="GET",
+                    source="path-discovery",
+                    content_type=response.headers.get("content-type"),
+                    status=response.status,
+                )
                 context.emit(target.url, self.name, "info", f"Response HTTP {response.status}: /{path} ({len(response.body)} bytes)")
                 if response.status < 400:
                     severity = "medium" if path in SENSITIVE else "info"

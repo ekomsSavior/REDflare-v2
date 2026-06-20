@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from threading import RLock
 from typing import Any
-from urllib.parse import parse_qsl, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 def canonical_url(url: str) -> str:
@@ -39,6 +40,7 @@ class SurfaceParameter:
 @dataclass
 class SurfaceEndpoint:
     url: str
+    observed_requests: set[tuple[str, str]] = field(default_factory=set)
     methods: set[str] = field(default_factory=set)
     content_types: set[str] = field(default_factory=set)
     authentication: set[str] = field(default_factory=set)
@@ -50,6 +52,7 @@ class SurfaceEndpoint:
     def to_dict(self) -> dict[str, Any]:
         return {
             "url": self.url,
+            "observed_urls": sorted({redact_url(value) for _, value in self.observed_requests}),
             "methods": sorted(self.methods),
             "content_types": sorted(self.content_types),
             "authentication": sorted(self.authentication),
@@ -91,6 +94,9 @@ class AttackSurfaceGraph:
                 normalized, SurfaceEndpoint(normalized)
             )
             endpoint.methods.add(method.upper())
+            endpoint.observed_requests.add(
+                (method.upper(), urlunsplit((*urlsplit(url)[:4], "")))
+            )
             endpoint.sources.add(source)
             if content_type:
                 endpoint.content_types.add(content_type.split(";", 1)[0].strip().lower())
@@ -145,6 +151,16 @@ class AttackSurfaceGraph:
         with self._lock:
             return sorted(self._endpoints.get(target, {}))
 
+    def request_urls(self, target: str, method: str = "GET") -> list[str]:
+        with self._lock:
+            values = {
+                observed
+                for endpoint in self._endpoints.get(target, {}).values()
+                for observed_method, observed in endpoint.observed_requests
+                if method.upper() == observed_method
+            }
+            return sorted(values)
+
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             targets: dict[str, Any] = {}
@@ -175,3 +191,15 @@ class AttackSurfaceGraph:
                 },
                 "targets": targets,
             }
+
+
+def redact_url(url: str) -> str:
+    parsed = urlsplit(url)
+    sensitive = re.compile(r"(?:token|secret|password|passwd|api[_-]?key|auth|session|jwt)", re.I)
+    query = urlencode(
+        [
+            (name, "<redacted>" if sensitive.search(name) else value)
+            for name, value in parse_qsl(parsed.query, keep_blank_values=True)
+        ]
+    )
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, query, ""))

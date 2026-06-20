@@ -11,6 +11,7 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 - OpenAPI 2.x and 3.x endpoint and parameter ingestion
 - Explicit opt-in GraphQL schema introspection with bounded response sizes
 - Browser request/response ingestion from GATEkeeper reports
+- Sensitive-data exposure checks across HTML, JavaScript bundles, and mapped GET responses
 - Stable `RFV2-*` test IDs mapped to OWASP WSTG v4.2, ASVS 5.0.0, CWE, and OWASP API Security 2023
 - Per-run `attack_surface.json` and `test_registry.json` artifacts
 
@@ -169,6 +170,28 @@ Use a JSON scope file to prevent accidental target drift:
 | `full` | web plus GATEkeeper and noauth_finder adapters |
 
 Both `web` and `full` include application mapping. The `full` profile additionally merges browser-observed network traffic into the shared graph.
+
+## Sensitive-data exposure checks
+
+Every profile checks in-scope responses for credential patterns, private keys,
+credentialed database URLs, JWTs, recognized password-hash formats, sensitive
+JavaScript assignments, and private/internal IP addresses. Web and full profiles
+inspect the mapped GET surface, including same-origin JavaScript bundles and path
+discovery hits.
+
+Each match is printed during the run and included in the terminal dossier,
+`report.html`, `findings.jsonl`, the module result, and a dedicated masked artifact:
+
+```text
+artifacts/sensitive_exposure/<host>/exposures.json
+```
+
+Credential and password-hash values are masked by design. Reports retain the
+location, line number, redacted context, value preview, and a SHA-256 fingerprint
+for verification and deduplication. Private/internal IP addresses are retained in
+full because they are the disclosure evidence itself. A private IP appearing in a
+response is reported as information disclosure; REDflare does not label it IDOR
+without an authorization comparison proving object-level access failure.
 
 Path discovery accepts any user-provided wordlist:
 

@@ -3,15 +3,16 @@ from redflare.modules import (
     HeaderModule,
     PassiveReconModule,
     PathDiscoveryModule,
+    SensitiveExposureModule,
     SurfaceAnalysisModule,
 )
 from redflare.modules.adapters import GatekeeperAdapter, NoAuthAdapter
 
 
 PROFILES = {
-    "quick": [PassiveReconModule, HeaderModule],
-    "web": [PassiveReconModule, HeaderModule, SurfaceAnalysisModule, ApplicationMappingModule, PathDiscoveryModule],
-    "full": [PassiveReconModule, HeaderModule, SurfaceAnalysisModule, ApplicationMappingModule, PathDiscoveryModule, GatekeeperAdapter, NoAuthAdapter],
+    "quick": [PassiveReconModule, HeaderModule, SensitiveExposureModule],
+    "web": [PassiveReconModule, HeaderModule, SurfaceAnalysisModule, ApplicationMappingModule, PathDiscoveryModule, SensitiveExposureModule],
+    "full": [PassiveReconModule, HeaderModule, SurfaceAnalysisModule, ApplicationMappingModule, PathDiscoveryModule, GatekeeperAdapter, NoAuthAdapter, SensitiveExposureModule],
 }
 
 

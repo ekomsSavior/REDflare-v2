@@ -24,6 +24,21 @@ class SurfaceGraphTests(unittest.TestCase):
         self.assertEqual(len(endpoints), 1)
         self.assertEqual(endpoints[0]["methods"], ["GET", "POST"])
         self.assertEqual({item["name"] for item in endpoints[0]["parameters"]}, {"id", "name"})
+        self.assertEqual(
+            graph.request_urls("https://example.test"),
+            ["https://example.test/api/users?id=7"],
+        )
+
+    def test_redacts_sensitive_query_values_in_snapshot(self):
+        graph = AttackSurfaceGraph()
+        graph.add_endpoint(
+            "https://example.test",
+            "https://example.test/callback?id=7&access_token=super-secret",
+            source="browser-traffic",
+        )
+        serialized = str(graph.snapshot())
+        self.assertNotIn("super-secret", serialized)
+        self.assertIn("access_token=%3Credacted%3E", serialized)
 
 
 if __name__ == "__main__":

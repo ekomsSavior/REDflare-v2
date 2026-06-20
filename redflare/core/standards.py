@@ -30,6 +30,7 @@ class TestDefinition:
 WSTG_URLS = {
     "WSTG-INFO-06": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/06-Identify_Application_Entry_Points",
     "WSTG-INFO-07": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/07-Map_Execution_Paths_Through_Application",
+    "WSTG-INFO-05": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/05-Review_Webpage_Content_for_Information_Leakage",
     "WSTG-CONF-04": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information",
     "WSTG-CONF-05": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/05-Enumerate_Infrastructure_and_Application_Admin_Interfaces",
     "WSTG-CONF-07": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/07-Test_HTTP_Strict_Transport_Security",
@@ -39,6 +40,7 @@ WSTG_URLS = {
 
 API_SECURITY_URLS = {
     "API1:2023": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/",
+    "API3:2023": "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/",
     "API8:2023": "https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/",
     "API9:2023": "https://owasp.org/API-Security/editions/2023/en/0xa9-improper-inventory-management/",
     "API10:2023": "https://owasp.org/API-Security/editions/2023/en/0xaa-unsafe-consumption-of-apis/",
@@ -86,6 +88,10 @@ TEST_REGISTRY: tuple[TestDefinition, ...] = (
     TestDefinition(
         "RFV2-CONF-002", "Discover exposed application paths", "path_discovery", "discovered-path",
         ("WSTG-CONF-04", "WSTG-CONF-05"), ("v5.0.0-13.4.5",), ("CWE-200",), ("API9:2023",),
+    ),
+    TestDefinition(
+        "RFV2-DATA-001", "Detect sensitive data in client-accessible responses", "sensitive_exposure", "sensitive-data-exposure",
+        ("WSTG-INFO-05",), ("v5.0.0-13.4.7", "v5.0.0-14.2.3"), ("CWE-200", "CWE-798"), ("API3:2023", "API8:2023"),
     ),
     TestDefinition(
         "RFV2-BROW-001", "Corroborate headers in a browser runtime", "gatekeeper", "browser-security-headers",

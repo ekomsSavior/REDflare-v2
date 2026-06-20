@@ -60,6 +60,10 @@ class RunStore:
             "findings": len(findings),
             "by_severity": count_by(finding.severity for finding in findings),
             "by_module": count_by(finding.module for finding in findings),
+            "by_category": count_by(finding.category for finding in findings),
+            "sensitive_exposures": sum(
+                finding.category == "sensitive-data-exposure" for finding in findings
+            ),
             "attack_surface": (surface_graph or {}).get("summary", {}),
         }
         self._write_json(self.root / "summary.json", summary)
@@ -130,8 +134,10 @@ def render_html(
         module_findings = "".join(
             "<article class=\"finding\">"
             f"<h4>[{html.escape(finding.severity.upper())}] {html.escape(finding.title)}</h4>"
+            f"<p><strong>Test ID:</strong> {html.escape(finding.test_id or 'unmapped')}</p>"
             f"<p>{html.escape(finding.description)}</p>"
             f"<pre>{html.escape(json.dumps(finding.evidence, indent=2, default=str))}</pre>"
+            f"<p><strong>Remediation:</strong> {html.escape(finding.remediation or 'Review and remediate based on verified impact.')}</p>"
             "</article>"
             for finding in result.findings
         ) or "<p>No module findings.</p>"

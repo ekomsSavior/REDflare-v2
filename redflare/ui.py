@@ -68,6 +68,11 @@ class LiveConsole:
                 file=self.stream,
             )
             print(f"Findings:  {summary['findings']}  {summary.get('by_severity', {})}", file=self.stream)
+            if summary.get("sensitive_exposures"):
+                print(
+                    f"Sensitive exposures: {summary['sensitive_exposures']}",
+                    file=self.stream,
+                )
 
             print("\nMODULE EXECUTION", file=self.stream)
             print("─" * width, file=self.stream)
@@ -92,10 +97,14 @@ class LiveConsole:
                 )
                 print(f"     Target: {finding.target}", file=self.stream)
                 print(f"     Module: {finding.module} | Confidence: {finding.confidence:.2f}", file=self.stream)
+                if finding.test_id:
+                    print(f"     Test ID: {finding.test_id}", file=self.stream)
                 print(f"     {finding.description}", file=self.stream)
                 if finding.evidence:
                     print("     Evidence:", file=self.stream)
                     self._print_value(finding.evidence, indent=7)
+                if finding.remediation:
+                    print(f"     Remediation: {finding.remediation}", file=self.stream)
 
             intel = summary.get("repository_intelligence")
             if intel:
@@ -105,7 +114,14 @@ class LiveConsole:
 
             print("\nREPORT FILES", file=self.stream)
             print("─" * width, file=self.stream)
-            for name in ("report.html", "summary.json", "findings.jsonl", "manifest.json"):
+            for name in (
+                "report.html",
+                "summary.json",
+                "findings.jsonl",
+                "attack_surface.json",
+                "test_registry.json",
+                "manifest.json",
+            ):
                 print(f"{run_directory / name}", file=self.stream)
             print("═" * width, file=self.stream, flush=True)
 
@@ -134,10 +150,14 @@ class LiveConsole:
                 f"(confidence {finding.confidence:.2f})",
                 file=self.stream,
             )
+            if finding.test_id:
+                print(f"     Test ID: {finding.test_id}", file=self.stream)
             print(f"     {finding.description}", file=self.stream)
             if finding.evidence:
                 print("     Evidence:", file=self.stream)
                 self._print_value(finding.evidence, indent=7)
+            if finding.remediation:
+                print(f"     Remediation: {finding.remediation}", file=self.stream)
 
         print("\nErrors:", file=self.stream)
         if result.errors:

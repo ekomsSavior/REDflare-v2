@@ -90,6 +90,7 @@ def interactive_arguments() -> list[str] | None:
         arguments.extend(["--max-crawl-depth", prompt("Maximum crawler depth", "2")])
         if yes_no("Permit bounded GraphQL schema introspection on in-scope endpoints", False):
             arguments.append("--graphql-introspection")
+        arguments.extend(["--max-exposure-endpoints", prompt("Maximum responses to inspect for sensitive exposure", "75")])
 
     if profile == "full":
         repositories = prompt(

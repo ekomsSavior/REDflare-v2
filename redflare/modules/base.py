@@ -21,6 +21,9 @@ class ModuleContext:
     max_crawl_depth: int = 2
     max_scripts: int = 20
     max_schema_documents: int = 8
+    max_exposure_endpoints: int = 75
+    max_exposure_findings: int = 100
+    max_exposure_body_bytes: int = 2_000_000
     graphql_introspection: bool = False
     allow_public: bool = False
     surface_graph: AttackSurfaceGraph = field(default_factory=AttackSurfaceGraph)
