@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "redflare-v2"
-version = "2.0.0"
+version = "2.1.0"
 description = "Scope-first web assessment framework with a shared attack-surface graph"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -16,3 +16,6 @@ redflare-v2 = "redflare.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["redflare*"]
+
+[tool.setuptools.package-data]
+"redflare.web" = ["*.html", "*.js", "*.css"]

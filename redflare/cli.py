@@ -15,6 +15,7 @@ from .modules.base import ModuleContext
 from .profiles import PROFILES, build_modules
 from .interactive import interactive_arguments
 from .ui import LiveConsole
+from .visualize import VisualServer
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -25,6 +26,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("modules", help="List profiles and modules")
     sub.add_parser("doctor", help="Check source-tool adapters")
     sub.add_parser("tests", help="List stable test IDs and standards mappings")
+    visualize = sub.add_parser("visualize", help="Open the local visual investigation console for a run")
+    visualize.add_argument("run_directory", help="REDflare run directory containing attack_surface.json")
+    visualize.add_argument("--port", type=int, default=8765, help="Loopback port (0 chooses an available port)")
+    visualize.add_argument("--no-browser", action="store_true", help="Do not open the default browser")
 
     intel = sub.add_parser("intel", help="Run repository secret intelligence through REAPER")
     intel.add_argument("--repo", action="append", required=True, help="Authorized GitHub repository URL; repeatable")
@@ -75,6 +80,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "tests":
         print(json.dumps(registry_document(), indent=2))
+        return 0
+    if args.command == "visualize":
+        try:
+            server = VisualServer(Path(args.run_directory), max(0, args.port))
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"Visualization error: {exc}", file=sys.stderr)
+            return 2
+        server.serve(open_browser=not args.no_browser)
         return 0
     if args.command == "intel":
         if not args.authorized:

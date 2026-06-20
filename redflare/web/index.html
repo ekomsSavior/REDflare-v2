@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>REDflare Visual Console</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">RF</span><div><strong>REDflare</strong><small>Visual investigation console</small></div></div>
+    <div class="run-meta"><span id="run-id">Loading run…</span><span id="graph-status" class="status">offline data</span></div>
+  </header>
+
+  <main class="workspace">
+    <aside class="sidebar left-panel">
+      <section class="card stats-card">
+        <div class="card-title">Run topology</div>
+        <div id="stats" class="stats-grid"></div>
+      </section>
+      <section class="card">
+        <label class="search-label" for="graph-search">Search graph</label>
+        <div class="search-wrap"><input id="graph-search" type="search" placeholder="URL, parameter, finding, test ID…"><span id="search-count"></span></div>
+      </section>
+      <section class="card grow">
+        <div class="card-title row"><span>Layers</span><button id="show-all" class="text-button">show all</button></div>
+        <div id="filters" class="filters"></div>
+      </section>
+      <section class="card legend-card">
+        <div class="card-title">Severity</div>
+        <div class="severity-legend"><span class="critical">critical</span><span class="high">high</span><span class="medium">medium</span><span class="low">low</span><span class="info">info</span></div>
+      </section>
+    </aside>
+
+    <section class="graph-shell">
+      <div class="toolbar">
+        <div class="segmented" aria-label="Graph layout">
+          <button class="layout-button active" data-layout="force">Force</button>
+          <button class="layout-button" data-layout="tree">Tree</button>
+          <button class="layout-button" data-layout="radial">Radial</button>
+        </div>
+        <button id="fit-view" class="tool-button">Fit view</button>
+        <button id="reset-focus" class="tool-button">Clear focus</button>
+        <span id="visible-count" class="visible-count"></span>
+      </div>
+      <div id="graph-stage" class="graph-stage">
+        <svg id="graph" role="img" aria-label="REDflare assessment graph">
+          <defs>
+            <marker id="arrow" viewBox="0 -5 10 10" refX="18" refY="0" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,-5L10,0L0,5"></path></marker>
+            <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur><feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
+          </defs>
+          <g id="viewport"><g id="edges"></g><g id="edge-labels"></g><g id="nodes"></g></g>
+        </svg>
+        <div id="tooltip" class="tooltip"></div>
+        <div id="empty-state" class="empty-state hidden">No nodes match the current filters.</div>
+      </div>
+    </section>
+
+    <aside class="sidebar detail-panel">
+      <section class="card detail-card">
+        <div class="card-title">Evidence inspector</div>
+        <div id="detail-empty" class="detail-empty"><div class="detail-icon">⌖</div><p>Select a node to inspect its evidence and relationships.</p></div>
+        <div id="detail" class="hidden">
+          <div class="detail-heading"><span id="detail-icon"></span><div><h2 id="detail-title"></h2><span id="detail-type" class="pill"></span></div></div>
+          <div id="detail-links" class="detail-links"></div>
+          <div class="detail-section"><h3>Properties</h3><div id="detail-properties"></div></div>
+          <div class="detail-section"><h3>Relationships</h3><div id="detail-relations"></div></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -14,6 +14,7 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 - Sensitive-data exposure checks across HTML, JavaScript bundles, and mapped GET responses
 - Stable `RFV2-*` test IDs mapped to OWASP WSTG v4.2, ASVS 5.0.0, CWE, and OWASP API Security 2023
 - Per-run `attack_surface.json` and `test_registry.json` artifacts
+- Offline visual investigation console with force, tree, and radial graph layouts
 
 ## Current capabilities
 
@@ -47,15 +48,15 @@ The source repositories remain untouched. REDflare either implements a clean nat
 The bundled launcher uses the system Python and requires no installation:
 
 ```bash
-git clone https://github.com/ekomsSavior/REDflare.git
-cd REDflare
+git clone https://github.com/ekomsSavior/REDflare-v2.git
+cd REDflare-v2
 ./bin/redflare --help
 ```
 
 Optional editable installation (requires the operating system's `python3-venv` package):
 
 ```bash
-cd REDflare
+cd REDflare-v2
 python3 -m venv .venv
 .venv/bin/pip install -e .
 .venv/bin/redflare --help
@@ -84,8 +85,9 @@ The wizard walks through:
 Full mode runs the complete pipeline automatically for each target:
 
 ```text
-DNS/TLS → HTTP headers → surface/forms/redirects → path discovery
-        → GATEkeeper browser capture → noauth_finder → correlation
+DNS/TLS → HTTP headers → surface/forms/redirects → application mapping
+        → path discovery → GATEkeeper browser capture → noauth_finder
+        → sensitive-exposure analysis → correlation
         → optional REAPER repository intelligence → unified report
 ```
 
@@ -107,6 +109,30 @@ timing, and artifact paths followed by consolidated, deduplicated findings.
 ./bin/redflare scan http://127.0.0.1:8000 \
   --authorized \
   --profile web
+```
+
+## Visual investigation console
+
+Open any completed REDflare run as a local, read-only graph workspace:
+
+```bash
+./bin/redflare visualize runs/run_20260620_120000
+```
+
+The console binds only to `127.0.0.1`, reads existing run artifacts, and does not
+send assessment data to a cloud service. It includes:
+
+- Force-directed, hierarchy-tree, and radial layouts
+- Typed nodes for targets, endpoints, parameters, schemas, findings, exposures, and standards
+- Search across URLs, evidence, parameters, severities, and test IDs
+- Per-layer filtering and connected-node highlighting
+- Zoom, pan, drag, fit-to-view, and keyboard-accessible node inspection
+- A safe evidence panel using the same masked data stored by REDflare
+
+Choose a different loopback port or suppress automatic browser launch:
+
+```bash
+./bin/redflare visualize runs/run_20260620_120000 --port 9000 --no-browser
 ```
 
 Tune application mapping limits explicitly:
@@ -165,8 +191,8 @@ Use a JSON scope file to prevent accidental target drift:
 
 | Profile | Modules |
 |---|---|
-| `quick` | passive recon, HTTP headers |
-| `web` | quick plus surface analysis, application mapping, and path discovery |
+| `quick` | passive recon, HTTP headers, and root-response exposure analysis |
+| `web` | quick plus surface analysis, application mapping, path discovery, and mapped-response exposure analysis |
 | `full` | web plus GATEkeeper and noauth_finder adapters |
 
 Both `web` and `full` include application mapping. The `full` profile additionally merges browser-observed network traffic into the shared graph.

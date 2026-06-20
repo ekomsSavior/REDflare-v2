@@ -38,7 +38,7 @@ def request(
     headers: dict[str, str] | None = None,
     allowed_origin: tuple[str, int] | None = None,
 ) -> HTTPResponse:
-    request_headers = {"User-Agent": "REDflare-v2/2.0 authorized-assessment"}
+    request_headers = {"User-Agent": "REDflare-v2/2.1 authorized-assessment"}
     request_headers.update(headers or {})
     req = urllib.request.Request(url, data=data, method=method, headers=request_headers)
     context = ssl.create_default_context()
