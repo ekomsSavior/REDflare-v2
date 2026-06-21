@@ -61,6 +61,9 @@ Launch REDflare with no arguments for the guided interface:
 ./bin/redflare
 ```
 
+<img width="466" height="230" alt="Screenshot_20260621_093338" src="https://github.com/user-attachments/assets/f247410f-dcba-4674-b825-d23972c4521a" />
+
+
 The main menu also discovers recent runs and launches the visual investigation
 console without requiring command-line flags. Both ordinary paths and local
 `file:///...` URLs are accepted.
@@ -112,6 +115,8 @@ Open any completed REDflare run as a local, read-only graph workspace:
 ```bash
 ./bin/redflare visualize runs/run_20260620_120000
 ```
+<img width="861" height="927" alt="IMG_4927" src="https://github.com/user-attachments/assets/2afdf195-91b2-40d5-86b7-daeae056834c" />
+
 
 The console binds only to `127.0.0.1`, reads existing run artifacts, and does not
 send assessment data to a cloud service. It includes:
@@ -122,6 +127,9 @@ send assessment data to a cloud service. It includes:
 - Per-layer filtering and connected-node highlighting
 - Zoom, pan, drag, fit-to-view, and keyboard-accessible node inspection
 - A grouped evidence panel with collapsible sections, deduplicated/paginated URLs, and copy controls
+
+<img width="1184" height="929" alt="IMG_4925" src="https://github.com/user-attachments/assets/302eb4f5-0d65-4fbb-9253-9114fe161896" />
+
 
 Choose a different loopback port or suppress automatic browser launch:
 
