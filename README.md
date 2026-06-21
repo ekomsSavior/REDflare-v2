@@ -126,9 +126,7 @@ send assessment data to a cloud service. It includes:
 - Search across URLs, evidence, parameters, severities, and test IDs
 - Per-layer filtering and connected-node highlighting
 - Zoom, pan, drag, fit-to-view, and keyboard-accessible node inspection
-- A grouped evidence panel with collapsible sections, deduplicated/paginated URLs, and copy controls
-
-<img width="1184" height="929" alt="IMG_4925" src="https://github.com/user-attachments/assets/302eb4f5-0d65-4fbb-9253-9114fe161896" />
+- A grouped evidence panel with collapsible sections, deduplicated/paginated URLs, and copy control
 
 
 Choose a different loopback port or suppress automatic browser launch:
