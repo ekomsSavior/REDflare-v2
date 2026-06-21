@@ -22,7 +22,6 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 
 ## Current capabilities
 
-- Mandatory authorization acknowledgement before active scans
 - Optional JSON allowlist and explicit public-target gate
 - Per-run manifests, module output, JSONL findings, summaries, artifacts, and HTML reports
 - Native DNS/TLS reconnaissance
@@ -33,19 +32,6 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 - Repository secret-intelligence bridge to REAPER
 - Standard-library-only core; no required runtime dependencies
 
-REDflare intentionally excludes denial-of-service, flooding, spam, disruption, credential validation, and destructive actions.
-
-## Source-tool map
-
-| REDflare capability | Existing project |
-|---|---|
-| GitHub secret intelligence | REAPER |
-| Path discovery concepts | Sentinel |
-| Unauthenticated service triage | noauth_finder |
-| Browser/runtime evidence | GATEkeeper |
-| DNS, TLS, redirects, and form-analysis concepts | PHISH_HUNTER_PRO `deep_recon.py` |
-
-The source repositories remain untouched. REDflare either implements a clean native module or invokes an existing tool through an adapter.
 
 ## Run locally
 
