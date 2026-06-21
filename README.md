@@ -8,7 +8,6 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 ## What v2 adds
 
 - A bounded same-origin crawler for links, forms, and execution paths
-- A deduplicated endpoint inventory shared by all native modules
 - Form parameter, HTTP method, content type, and authentication-requirement mapping
 - JavaScript route extraction from same-origin script assets
 - OpenAPI 2.x and 3.x endpoint and parameter ingestion
