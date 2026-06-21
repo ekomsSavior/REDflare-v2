@@ -11,7 +11,7 @@ from .core.scope import ScopeError, ScopePolicy, normalize_target
 from .core.standards import registry_document
 from .core.runner import Runner
 from .core.storage import RunStore, target_run_id
-from .modules.adapters import adapter_health, run_reaper
+from .modules.repository import run_repository_intelligence
 from .modules.base import ModuleContext
 from .profiles import PROFILES, build_modules
 from .interactive import interactive_arguments, yes_no
@@ -25,14 +25,14 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("modules", help="List profiles and modules")
-    sub.add_parser("doctor", help="Check source-tool adapters")
+    sub.add_parser("doctor", help="Check native REDflare capabilities")
     sub.add_parser("tests", help="List stable test IDs and standards mappings")
     visualize = sub.add_parser("visualize", help="Open the local visual investigation console for a run")
     visualize.add_argument("run_directory", help="REDflare run directory or local file:/// URL")
     visualize.add_argument("--port", type=int, default=8765, help="Loopback port (0 chooses an available port)")
     visualize.add_argument("--no-browser", action="store_true", help="Do not open the default browser")
 
-    intel = sub.add_parser("intel", help="Run repository secret intelligence through REAPER")
+    intel = sub.add_parser("intel", help="Run native REDflare repository secret intelligence")
     intel.add_argument("--repo", action="append", required=True, help="Authorized GitHub repository URL; repeatable")
     intel.add_argument("--authorized", action="store_true", help="Acknowledge authorization for every repository")
     default_runs = str(Path(os.environ.get("REDFLARE_HOME", Path.cwd())) / "runs")
@@ -81,7 +81,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{name:5}  " + ", ".join(module.name for module in classes))
         return 0
     if args.command == "doctor":
-        print(json.dumps({"adapters": adapter_health()}, indent=2))
+        try:
+            import playwright  # noqa: F401
+            browser = "native-playwright"
+        except ImportError:
+            browser = "native-http-fallback"
+        print(json.dumps({"standalone": True, "external_tools_required": False,
+                          "capabilities": {"browser_runtime": browser, "unauthenticated_surface": "native",
+                                           "repository_intelligence": "native"}}, indent=2))
         return 0
     if args.command == "tests":
         print(json.dumps(registry_document(), indent=2))
@@ -99,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
             print("Refusing to run intelligence collection without --authorized.", file=sys.stderr)
             return 2
         store = RunStore(args.output)
-        result = run_reaper(args.repo, store.artifacts / "reaper")
+        result = run_repository_intelligence(args.repo, store.artifacts / "repository_intelligence")
         store.write_manifest(
             {"run_id": store.run_id, "kind": "repository-intelligence", "repositories": args.repo}
         )
@@ -161,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Evidence: {store.root}")
     results, summary = Runner(store, build_modules(args.profile), context, args.workers).run(targets)
     if args.github_repo:
-        intel = run_reaper(args.github_repo, store.artifacts / "reaper")
+        intel = run_repository_intelligence(args.github_repo, store.artifacts / "repository_intelligence")
         summary["repository_intelligence"] = intel
         (store.root / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     console.final_report(summary, results, store.root)

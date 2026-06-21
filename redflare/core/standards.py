@@ -99,15 +99,15 @@ TEST_REGISTRY: tuple[TestDefinition, ...] = (
         ("WSTG-INFO-05",), ("v5.0.0-13.4.7", "v5.0.0-14.2.3"), ("CWE-200", "CWE-798"), ("API3:2023", "API8:2023"),
     ),
     TestDefinition(
-        "RFV2-BROW-001", "Corroborate headers in a browser runtime", "gatekeeper", "browser-security-headers",
+        "RFV2-BROW-001", "Corroborate headers in a browser runtime", "browser_runtime", "browser-security-headers",
         ("WSTG-CONF-07",), ("v5.0.0-3.4.1", "v5.0.0-3.4.3"), ("CWE-693",), ("API8:2023",),
     ),
     TestDefinition(
-        "RFV2-BROW-002", "Inventory browser-observed endpoints", "gatekeeper", "browser-endpoints",
+        "RFV2-BROW-002", "Inventory browser-observed endpoints", "browser_runtime", "browser-endpoints",
         ("WSTG-INFO-06", "WSTG-INFO-07"), ("v5.0.0-8.1.1",), ("CWE-1059",), ("API9:2023",),
     ),
     TestDefinition(
-        "RFV2-ATHZ-001", "Identify unauthenticated service surfaces", "noauth_finder", "unauthenticated-service",
+        "RFV2-ATHZ-001", "Identify unauthenticated service surfaces", "authorization_surface", "unauthenticated-service",
         ("WSTG-ATHZ-02",), ("v5.0.0-8.2.1",), ("CWE-862",), ("API1:2023",),
     ),
     TestDefinition(

@@ -95,7 +95,7 @@ def interactive_arguments() -> list[str] | None:
     print("2) Web assessment (native modules)")
     print("3) Quick reconnaissance")
     print("4) Visualize a completed run")
-    print("5) Tool and adapter health check")
+    print("5) Native capability health check")
     print("6) Exit")
     choice = prompt("Select an option", "1")
     if choice == "4":

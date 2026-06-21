@@ -5,6 +5,8 @@ from .passive import PassiveReconModule
 from .paths import PathDiscoveryModule
 from .surface import SurfaceAnalysisModule
 from .vulnerabilities import CVEIntelligenceModule
+from .browser import NativeBrowserRuntimeModule
+from .noauth import NativeNoAuthModule
 
 __all__ = [
     "ApplicationMappingModule",
@@ -14,4 +16,6 @@ __all__ = [
     "SurfaceAnalysisModule",
     "SensitiveExposureModule",
     "CVEIntelligenceModule",
+    "NativeBrowserRuntimeModule",
+    "NativeNoAuthModule",
 ]

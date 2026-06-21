@@ -8,12 +8,12 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 ## What v2 adds
 
 - A bounded same-origin crawler for links, forms, and execution paths
-- A deduplicated endpoint inventory shared by native modules and adapters
+- A deduplicated endpoint inventory shared by all native modules
 - Form parameter, HTTP method, content type, and authentication-requirement mapping
 - JavaScript route extraction from same-origin script assets
 - OpenAPI 2.x and 3.x endpoint and parameter ingestion
 - Explicit opt-in GraphQL schema introspection with bounded response sizes
-- Browser request/response ingestion from GATEkeeper reports
+- Native browser request/response ingestion and runtime evidence
 - Sensitive-data exposure checks across HTML, JavaScript bundles, and mapped GET responses
 - Exact-version component fingerprinting with live NVD CVE correlation and CVSS context
 - Stable `RFV2-*` test IDs mapped to OWASP WSTG v4.2, ASVS 5.0.0, CWE, and OWASP API Security 2023
@@ -28,10 +28,10 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 - HTTP status, redirect, response metadata, and security-header analysis
 - Rate-limited path discovery with wildcard-response filtering
 - Correlation of related observations into higher-confidence findings
-- Optional adapters for GATEkeeper and noauth_finder
-- Repository secret-intelligence bridge to REAPER
+- Native browser-runtime capture derived from GATEkeeper
+- Native unauthenticated-surface triage derived from noauth_finder
+- Native repository secret intelligence derived from REAPER
 - Standard-library-only core; no required runtime dependencies
-
 
 ## Run locally
 
@@ -81,9 +81,9 @@ Full mode runs the complete pipeline automatically for each target:
 
 ```text
 DNS/TLS → HTTP headers → surface/forms/redirects → application mapping
-        → path discovery → GATEkeeper browser capture → noauth_finder
+        → path discovery → native browser capture → native no-auth triage
         → NVD CVE correlation → sensitive-exposure analysis → correlation
-        → optional REAPER repository intelligence → unified report
+        → optional native repository intelligence → unified report
 ```
 
 Flags remain available for repeatable automation and CI workflows.
@@ -91,7 +91,7 @@ Flags remain available for repeatable automation and CI workflows.
 During a run, REDflare streams stage transitions, DNS/TLS results, HTTP status,
 surface counts, path-probe progress, normalized browser request/response events,
 elapsed times, and failures. Sub-tool banners and per-tool summaries are suppressed;
-raw adapter logs remain in the evidence folder. Reporting appears once, after the
+raw module evidence remains in the evidence folder. Reporting appears once, after the
 complete pipeline finishes, as a full module-by-module assessment dossier. The
 terminal and HTML reports include every module's observations, findings, errors,
 timing, and artifact paths followed by consolidated, deduplicated findings.
@@ -147,7 +147,7 @@ GraphQL introspection is disabled by default and requires a separate opt-in:
   --graphql-introspection
 ```
 
-Run repository intelligence through the existing REAPER binary:
+Run REDflare's native repository intelligence:
 
 ```bash
 export GITHUB_TOKEN="your_token"
@@ -188,9 +188,9 @@ Use a JSON scope file to prevent accidental target drift:
 |---|---|
 | `quick` | passive recon, HTTP headers, CVE correlation, and root-response exposure analysis |
 | `web` | quick plus surface analysis, application mapping, path discovery, and mapped-response exposure analysis |
-| `full` | web plus GATEkeeper and noauth_finder adapters |
+| `full` | web plus native browser-runtime capture and unauthenticated-surface triage |
 
-Both `web` and `full` include application mapping. The `full` profile additionally merges browser-observed network traffic into the shared graph.
+Both `web` and `full` include application mapping. The `full` profile additionally runs REDflare's native browser-runtime and unauthenticated-surface modules and merges their evidence into the shared graph. No external GATEkeeper, noauth_finder, or REAPER installation is required. When Playwright/Chromium is available, the runtime module executes JavaScript in a real browser; otherwise it automatically uses REDflare's native HTTP runtime capture rather than skipping the module.
 
 ## CVE intelligence
 
@@ -279,8 +279,6 @@ python3 -m compileall -q redflare tests
 
 ## Roadmap
 
-- Parse GATEkeeper and noauth_finder reports into native findings
-- Add a REAPER global-intelligence adapter
 - Add SQLite indexing, SARIF, and a local dashboard
 - Add resume/checkpoint support and richer cross-module correlation
 - Add signed plugin manifests and module capability declarations
