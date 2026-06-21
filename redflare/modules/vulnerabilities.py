@@ -49,6 +49,12 @@ PRODUCTS = {
     "wordpress": ("WordPress", "wordpress", "wordpress"),
     "drupal": ("Drupal", "drupal", "drupal"),
     "joomla": ("Joomla", "joomla", r"joomla\!"),
+    "openssh": ("OpenSSH", "openbsd", "openssh"),
+    "mysql": ("MySQL", "oracle", "mysql"),
+    "postgresql": ("PostgreSQL", "postgresql", "postgresql"),
+    "redis": ("Redis", "redis", "redis"),
+    "mongodb": ("MongoDB", "mongodb", "mongodb"),
+    "microsoft sql server": ("Microsoft SQL Server", "microsoft", "sql_server"),
 }
 
 HEADER_PATTERNS = (
@@ -154,6 +160,15 @@ class CVEIntelligenceModule(Module):
             fingerprints = fingerprint_response(response.headers, response.body)
             mapped_urls = context.surface_graph.request_urls(target.url, "GET")
             fingerprints.extend(fingerprint_response({}, "\n".join(mapped_urls).encode()))
+            network = (context.surface_graph.snapshot().get("targets", {}).get(target.url, {}).get("network_hosts", []))
+            for host in network:
+                for service in host.get("services", []):
+                    product = str(service.get("product") or "").strip(); version = str(service.get("version") or "").strip()
+                    key = product.lower()
+                    if key in PRODUCTS and version:
+                        canonical, vendor, cpe_product = PRODUCTS[key]
+                        fingerprints.append(Fingerprint(canonical, version, vendor, cpe_product, "network-service",
+                                                        str(service.get("banner") or service.get("evidence") or "protocol identification")[:180]))
             fingerprints = list({(item.product, item.version): item for item in fingerprints}.values())
             fingerprints.sort(key=lambda item: (item.product.lower(), item.version))
             fingerprints = fingerprints[: context.max_cve_products]

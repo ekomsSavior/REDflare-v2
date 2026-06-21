@@ -134,7 +134,7 @@ def interactive_arguments() -> list[str] | None:
         arguments.append("--allow-public")
 
     if profile == "full" and not yes_no(
-        "Full mode includes browser interaction and focused unauthenticated service probing. Is that permitted",
+        "Full mode includes TCP discovery, protocol identification, browser interaction, and focused authorization checks. Is that permitted",
         False,
     ):
         print("Falling back to native web assessment mode.")
@@ -145,6 +145,20 @@ def interactive_arguments() -> list[str] | None:
     arguments.extend(["--output", output])
     arguments.extend(["--workers", prompt("Targets to process concurrently", "1")])
     arguments.extend(["--timeout", prompt("Request timeout in seconds", "10")])
+
+    if profile == "full":
+        print("\nNative network discovery")
+        print("1) Standard — curated infrastructure/application ports (recommended)")
+        print("2) Basic — essential web and administration ports")
+        print("3) Extended — broader service discovery")
+        print("4) Complete — TCP ports 1-65535")
+        depth = {"1":"standard", "2":"basic", "3":"extended", "4":"complete"}.get(prompt("Select network depth", "1"), "standard")
+        if depth == "complete" and not yes_no("I explicitly confirm complete TCP scanning is authorized", False):
+            print("Complete scanning was not confirmed; using standard depth."); depth = "standard"
+        arguments.extend(["--network-depth", depth])
+        ports = prompt("Optional explicit TCP ports/ranges (blank uses selected depth)")
+        if ports: arguments.extend(["--ports", ports])
+        if yes_no("Authorize bounded protocol-specific enumeration checks", False): arguments.append("--service-enumeration")
 
     if profile in {"web", "full"}:
         wordlist = prompt("Optional path wordlist")

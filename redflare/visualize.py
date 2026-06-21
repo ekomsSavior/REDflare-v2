@@ -86,6 +86,7 @@ def build_visual_graph(run_directory: str | Path) -> dict[str, Any]:
     target_ids: dict[str, str] = {}
     endpoint_ids: dict[tuple[str, str], str] = {}
     module_ids: dict[tuple[str, str], str] = {}
+    service_ids: dict[tuple[str, str, int], str] = {}
 
     def add_node(node: dict[str, Any]) -> str:
         nodes.setdefault(node["id"], node)
@@ -111,6 +112,23 @@ def build_visual_graph(run_directory: str | Path) -> dict[str, Any]:
         )
         target_ids[target] = target_id
         add_edge(run_node_id, target_id, "contains")
+
+        for host in data.get("network_hosts", []):
+            address = str(host.get("address") or "")
+            if not address: continue
+            host_id = add_node({"id": _stable_id("network_host", target + "\x00" + address), "label": address,
+                                "type": "network_host", "info": {key:value for key,value in host.items() if key != "services"}})
+            add_edge(target_id, host_id, "resolves_to")
+            for service in host.get("services", []):
+                port = int(service.get("port") or 0); protocol = str(service.get("protocol") or "tcp")
+                service_id = add_node({"id": _stable_id("service", f"{target}\x00{address}\x00{protocol}\x00{port}"),
+                                       "label": f"{port}/{protocol} {service.get('service','unknown')}", "type": "service", "info": service})
+                service_ids[(target, address, port)] = service_id; add_edge(host_id, service_id, "exposes_service")
+                product = str(service.get("product") or ""); version = str(service.get("version") or "")
+                if product:
+                    tech_id = add_node({"id": _stable_id("technology", product + "\x00" + version), "label": f"{product} {version}".strip(),
+                                        "type": "technology", "info": {"technology":product,"version":version,"confidence":service.get("confidence")}})
+                    add_edge(service_id, tech_id, "identified_as")
 
         for endpoint in data.get("endpoints", []):
             url = str(endpoint.get("url") or "")
@@ -189,7 +207,9 @@ def build_visual_graph(run_directory: str | Path) -> dict[str, Any]:
         )
         evidence_url = str((finding.get("evidence") or {}).get("url") or "")
         endpoint_id = endpoint_ids.get((target, _canonical_url(evidence_url))) if evidence_url else None
-        add_edge(endpoint_id or target_id, finding_id, "exposes" if node_type == "exposure" else "has_finding")
+        evidence = finding.get("evidence") or {}
+        service_id = service_ids.get((target, str(evidence.get("address") or ""), int(evidence.get("port") or 0)))
+        add_edge(service_id or endpoint_id or target_id, finding_id, "exposes" if node_type == "exposure" else "has_finding")
         module_id = module_ids.get((target, str(finding.get("module") or "")))
         if module_id:
             add_edge(module_id, finding_id, "reported")

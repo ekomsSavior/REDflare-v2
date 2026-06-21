@@ -28,6 +28,9 @@ class CLITests(unittest.TestCase):
             "runs",                      # output
             "1",                         # workers
             "10",                        # timeout
+            "1",                         # standard network discovery
+            "",                          # default ports
+            "no",                        # no service enumeration
             "",                          # no wordlist
             "1",                         # rate
             "25",                        # max paths

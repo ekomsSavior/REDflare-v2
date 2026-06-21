@@ -13,6 +13,7 @@ from .core.runner import Runner
 from .core.storage import RunStore, target_run_id
 from .modules.repository import run_repository_intelligence
 from .modules.base import ModuleContext
+from .modules.network import parse_ports
 from .profiles import PROFILES, build_modules
 from .interactive import interactive_arguments, yes_no
 from .ui import LiveConsole
@@ -57,6 +58,11 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--max-exposure-body-bytes", type=int, default=2_000_000)
     scan.add_argument("--max-cve-products", type=int, default=12, help="Maximum exact product/version fingerprints to correlate with NVD")
     scan.add_argument("--max-cves-per-product", type=int, default=100, help="Maximum NVD CVEs retained per fingerprint")
+    scan.add_argument("--network-depth", choices=("basic", "standard", "extended", "complete"), default="standard")
+    scan.add_argument("--ports", help="Explicit TCP ports, for example 22,80,443,8000-8100")
+    scan.add_argument("--network-concurrency", type=int, default=64)
+    scan.add_argument("--network-timeout", type=float, default=.75)
+    scan.add_argument("--service-enumeration", action="store_true", help="Explicitly authorize bounded service-specific enumeration")
     scan.add_argument(
         "--graphql-introspection",
         action="store_true",
@@ -87,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
         except ImportError:
             browser = "native-http-fallback"
         print(json.dumps({"standalone": True, "external_tools_required": False,
-                          "capabilities": {"browser_runtime": browser, "unauthenticated_surface": "native",
+                          "capabilities": {"network_discovery": "native", "browser_runtime": browser, "unauthenticated_surface": "native",
                                            "repository_intelligence": "native"}}, indent=2))
         return 0
     if args.command == "tests":
@@ -141,6 +147,10 @@ def main(argv: list[str] | None = None) -> int:
     except (ScopeError, OSError, json.JSONDecodeError) as exc:
         print(f"Scope error: {exc}", file=sys.stderr)
         return 2
+    try:
+        network_ports = parse_ports(args.ports) if args.ports else ()
+    except ValueError as exc:
+        print(f"Port configuration error: {exc}", file=sys.stderr); return 2
 
     store = RunStore(args.output, target_run_id(targets))
     console = LiveConsole()
@@ -160,6 +170,14 @@ def main(argv: list[str] | None = None) -> int:
         max_exposure_body_bytes=max(1_024, args.max_exposure_body_bytes),
         max_cve_products=max(1, args.max_cve_products),
         max_cves_per_product=max(1, args.max_cves_per_product),
+        network_depth=policy.discovery_depth or args.network_depth,
+        network_ports=network_ports,
+        network_allowed_networks=policy.allowed_networks,
+        network_port_include=policy.port_include,
+        network_port_exclude=policy.port_exclude,
+        network_enumeration=args.service_enumeration,
+        network_concurrency=max(1, args.network_concurrency),
+        network_timeout=max(.1, args.network_timeout),
         graphql_introspection=args.graphql_introspection,
         allow_public=args.allow_public,
         reporter=console.emit,

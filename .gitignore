@@ -8,5 +8,5 @@ dist/
 build/
 
 # Local assessment inputs may contain client scope information.
-kctcs-paths.txt
-kctcs-scope.json
+*.scope.local.json
+*.wordlist.local.txt

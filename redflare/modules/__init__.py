@@ -7,6 +7,7 @@ from .surface import SurfaceAnalysisModule
 from .vulnerabilities import CVEIntelligenceModule
 from .browser import NativeBrowserRuntimeModule
 from .noauth import NativeNoAuthModule
+from .network import NetworkDiscoveryModule
 
 __all__ = [
     "ApplicationMappingModule",
@@ -18,4 +19,5 @@ __all__ = [
     "CVEIntelligenceModule",
     "NativeBrowserRuntimeModule",
     "NativeNoAuthModule",
+    "NetworkDiscoveryModule",
 ]

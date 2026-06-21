@@ -1,6 +1,6 @@
 # REDflare v2
 
-REDflare v2 is a scope-first orchestration framework for authorized web application reconnaissance and security assessment. It adds a shared attack-surface graph and a standards-backed test registry while preserving the original REDflare project unchanged.
+REDflare v2 is a standalone, scope-first framework for authorized network and web application reconnaissance and security assessment. It combines native service discovery, application mapping, evidence correlation, and visual investigation in one standards-backed workflow.
 
 <img width="457" height="105" alt="Screenshot_20260621_073244-1" src="https://github.com/user-attachments/assets/a98db72d-e00c-4651-a68a-fefb5b8d983b" />
 
@@ -8,6 +8,7 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 ## What v2 adds
 
 - A bounded same-origin crawler for links, forms, and execution paths
+- Native TCP discovery, protocol identification, exact-version fingerprinting, and host-role inference
 - Form parameter, HTTP method, content type, and authentication-requirement mapping
 - JavaScript route extraction from same-origin script assets
 - OpenAPI 2.x and 3.x endpoint and parameter ingestion
@@ -63,7 +64,6 @@ Launch REDflare with no arguments for the guided interface:
 
 <img width="466" height="230" alt="Screenshot_20260621_093338" src="https://github.com/user-attachments/assets/f247410f-dcba-4674-b825-d23972c4521a" />
 
-
 The main menu also discovers recent runs and launches the visual investigation
 console without requiring command-line flags. Both ordinary paths and local
 `file:///...` URLs are accepted.
@@ -82,7 +82,8 @@ The wizard walks through:
 Full mode runs the complete pipeline automatically for each target:
 
 ```text
-DNS/TLS → HTTP headers → surface/forms/redirects → application mapping
+Native TCP discovery → protocol identification → host-role inference → DNS/TLS
+        → HTTP headers → surface/forms/redirects → application mapping
         → path discovery → native browser capture → native no-auth triage
         → NVD CVE correlation → sensitive-exposure analysis → correlation
         → optional native repository intelligence → unified report
@@ -117,18 +118,15 @@ Open any completed REDflare run as a local, read-only graph workspace:
 ```
 <img width="861" height="927" alt="IMG_4927" src="https://github.com/user-attachments/assets/2afdf195-91b2-40d5-86b7-daeae056834c" />
 
-
 The console binds only to `127.0.0.1`, reads existing run artifacts, and does not
 send assessment data to a cloud service. It includes:
 
 - Force-directed, hierarchy-tree, and radial layouts
-- Typed nodes for targets, endpoints, parameters, schemas, findings, exposures, CVEs, and standards
+- Typed nodes for targets, network hosts, services, technologies, endpoints, parameters, schemas, findings, exposures, CVEs, and standards
 - Search across URLs, evidence, parameters, severities, and test IDs
 - Per-layer filtering and connected-node highlighting
 - Zoom, pan, drag, fit-to-view, and keyboard-accessible node inspection
 - A grouped evidence panel with collapsible sections, deduplicated/paginated URLs, and copy control
-
-
 Choose a different loopback port or suppress automatic browser launch:
 
 ```bash
@@ -193,9 +191,41 @@ Use a JSON scope file to prevent accidental target drift:
 |---|---|
 | `quick` | passive recon, HTTP headers, CVE correlation, and root-response exposure analysis |
 | `web` | quick plus surface analysis, application mapping, path discovery, and mapped-response exposure analysis |
-| `full` | web plus native browser-runtime capture and unauthenticated-surface triage |
+| `full` | web plus native network discovery, protocol identification, browser-runtime capture, and authorization triage |
 
 Both `web` and `full` include application mapping. The `full` profile additionally runs REDflare's native browser-runtime and unauthenticated-surface modules and merges their evidence into the shared graph. No external GATEkeeper, noauth_finder, or REAPER installation is required. When Playwright/Chromium is available, the runtime module executes JavaScript in a real browser; otherwise it automatically uses REDflare's native HTTP runtime capture rather than skipping the module.
+
+## Native network discovery
+
+Full Assessment begins with scope-controlled TCP discovery, safe protocol identification,
+exact-version fingerprinting, and confidence-scored host-role inference. Results are stored
+as network-host, service, and technology nodes in the shared graph and feed exact versions
+into CVE intelligence. Open ports are observations; REDflare creates a finding only when an
+explicitly authorized enumeration check provides evidence of a risky condition.
+
+The guided wizard offers Basic, Standard, Extended, and separately confirmed Complete
+(1-65535) TCP depth. Automation can use `--network-depth`, `--ports`,
+`--network-concurrency`, `--network-timeout`, and the separately authorized
+`--service-enumeration` switch. Artifacts are written under
+`artifacts/network_discovery/<target>/` as `port_scan.json`,
+`service_enumeration.json`, and `fingerprints.json`.
+
+Protocol-aware identification currently covers HTTP/HTTPS and generic TLS, SSH, FTP,
+SMTP, POP3, IMAP, SMB2, RDP, MySQL, PostgreSQL, VNC, and explicitly authorized Redis
+PING. Additional known infrastructure ports are recorded with lower-confidence port
+evidence until corroborated by banners, application evidence, or future protocol parsers.
+
+Scope files may constrain resolved addresses and ports:
+
+```json
+{
+  "allowed_hosts": ["app.example.test"],
+  "allowed_networks": ["10.0.0.0/24"],
+  "allow_public": false,
+  "scan_ports": {"include": [22, 80, 443, 445], "exclude": [22]},
+  "discovery_depth": "standard"
+}
+```
 
 ## CVE intelligence
 

@@ -26,6 +26,15 @@ class ModuleContext:
     max_exposure_body_bytes: int = 2_000_000
     max_cve_products: int = 12
     max_cves_per_product: int = 100
+    network_depth: str = "standard"
+    network_ports: tuple[int, ...] = ()
+    network_addresses: tuple[str, ...] = ()
+    network_allowed_networks: tuple[object, ...] = ()
+    network_port_include: tuple[int, ...] = ()
+    network_port_exclude: tuple[int, ...] = ()
+    network_enumeration: bool = False
+    network_concurrency: int = 64
+    network_timeout: float = 0.75
     graphql_introspection: bool = False
     allow_public: bool = False
     surface_graph: AttackSurfaceGraph = field(default_factory=AttackSurfaceGraph)

@@ -28,6 +28,7 @@ class TestDefinition:
 
 
 WSTG_URLS = {
+    "WSTG-INFO-02": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/02-Fingerprint_Web_Server",
     "WSTG-INFO-06": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/06-Identify_Application_Entry_Points",
     "WSTG-INFO-07": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/07-Map_Execution_Paths_Through_Application",
     "WSTG-INFO-05": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/05-Review_Webpage_Content_for_Information_Leakage",
@@ -67,6 +68,11 @@ def reference(family: str, identifier: str) -> dict[str, str]:
 
 
 TEST_REGISTRY: tuple[TestDefinition, ...] = (
+    TestDefinition(
+        "RFV2-NET-001", "Identify exposed network services and protocol-level authorization conditions",
+        "network_discovery", "exposed-network-service",
+        ("WSTG-INFO-02",), ("v5.0.0-13.1.1",), ("CWE-306",), ("API9:2023",),
+    ),
     TestDefinition(
         "RFV2-COMP-001", "Correlate disclosed component versions with known vulnerabilities",
         "cve_intelligence", "known-vulnerable-component",

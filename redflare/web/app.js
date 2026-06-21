@@ -4,6 +4,9 @@ const NS = "http://www.w3.org/2000/svg";
 const TYPE_STYLE = {
   run:       { color: "#ff4d5f", size: 26, icon: "RF", order: 0 },
   target:    { color: "#4ad9d9", size: 22, icon: "◎", order: 1 },
+  network_host:{ color: "#34d399", size: 17, icon: "IP", order: 1 },
+  service:   { color: "#fb923c", size: 13, icon: "P", order: 2 },
+  technology:{ color: "#f0abfc", size: 10, icon: "T", order: 3 },
   endpoint:  { color: "#58a6ff", size: 13, icon: "↗", order: 2 },
   module:    { color: "#f59e42", size: 12, icon: "m", order: 2 },
   parameter: { color: "#ac7cff", size: 8,  icon: "p", order: 3 },
@@ -81,6 +84,7 @@ function buildStats() {
     [meta.type_counts.endpoint || 0, "endpoints"],
     [(meta.type_counts.finding || 0) + (meta.type_counts.exposure || 0), "findings"],
   ];
+  if (meta.type_counts.network_host) values.push([meta.type_counts.network_host, "hosts"], [meta.type_counts.service || 0, "services"]);
   for (const [value, label] of values) {
     const card = htmlEl("div", "stat");
     card.append(htmlEl("strong", "", String(value)), htmlEl("span", "", label));

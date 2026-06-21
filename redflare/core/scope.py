@@ -17,6 +17,10 @@ class ScopeError(ValueError):
 @dataclass
 class ScopePolicy:
     allowed_hosts: set[str] = field(default_factory=set)
+    allowed_networks: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = ()
+    port_include: tuple[int, ...] = ()
+    port_exclude: tuple[int, ...] = ()
+    discovery_depth: str | None = None
     allow_public: bool = False
 
     @classmethod
@@ -26,6 +30,10 @@ class ScopePolicy:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         return cls(
             allowed_hosts={str(host).lower() for host in data.get("allowed_hosts", [])},
+            allowed_networks=tuple(ipaddress.ip_network(str(value), strict=False) for value in data.get("allowed_networks", [])),
+            port_include=tuple(int(value) for value in (data.get("scan_ports", {}).get("include", []))),
+            port_exclude=tuple(int(value) for value in (data.get("scan_ports", {}).get("exclude", []))),
+            discovery_depth=str(data.get("discovery_depth")) if data.get("discovery_depth") else None,
             allow_public=allow_public or bool(data.get("allow_public", False)),
         )
 

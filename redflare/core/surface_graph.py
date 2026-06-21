@@ -74,6 +74,25 @@ class AttackSurfaceGraph:
         self._endpoints: dict[str, dict[str, SurfaceEndpoint]] = {}
         self._edges: dict[str, set[tuple[str, str, str]]] = {}
         self._documents: dict[str, list[dict[str, Any]]] = {}
+        self._network: dict[str, dict[str, dict[str, Any]]] = {}
+
+    def add_network_host(self, target: str, address: str, **metadata: Any) -> None:
+        with self._lock:
+            host = self._network.setdefault(target, {}).setdefault(address, {"address": address, "services": [], "roles": [], "metadata": {}})
+            host["metadata"].update({key: value for key, value in metadata.items() if value is not None})
+
+    def add_service(self, target: str, address: str, service: dict[str, Any]) -> None:
+        with self._lock:
+            host = self._network.setdefault(target, {}).setdefault(address, {"address": address, "services": [], "roles": [], "metadata": {}})
+            key = (service.get("protocol", "tcp"), int(service.get("port", 0)))
+            current = next((item for item in host["services"] if (item.get("protocol", "tcp"), int(item.get("port", 0))) == key), None)
+            if current: current.update(service)
+            else: host["services"].append(dict(service))
+
+    def add_host_role(self, target: str, address: str, role: dict[str, Any]) -> None:
+        with self._lock:
+            host = self._network.setdefault(target, {}).setdefault(address, {"address": address, "services": [], "roles": [], "metadata": {}})
+            if role not in host["roles"]: host["roles"].append(dict(role))
 
     def add_endpoint(
         self,
@@ -164,7 +183,9 @@ class AttackSurfaceGraph:
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             targets: dict[str, Any] = {}
-            for target, endpoints in sorted(self._endpoints.items()):
+            all_targets = set(self._endpoints) | set(self._network) | set(self._documents)
+            for target in sorted(all_targets):
+                endpoints = self._endpoints.get(target, {})
                 edges = [
                     {"source": source, "destination": destination, "relation": relation}
                     for source, destination, relation in sorted(self._edges.get(target, set()))
@@ -173,6 +194,10 @@ class AttackSurfaceGraph:
                     "endpoints": [endpoints[url].to_dict() for url in sorted(endpoints)],
                     "edges": edges,
                     "documents": list(self._documents.get(target, [])),
+                    "network_hosts": [
+                        {**host, "services": sorted(host["services"], key=lambda item: int(item.get("port", 0)))}
+                        for _, host in sorted(self._network.get(target, {}).items())
+                    ],
                 }
             endpoint_count = sum(len(value["endpoints"]) for value in targets.values())
             parameter_count = sum(
@@ -188,6 +213,8 @@ class AttackSurfaceGraph:
                     "parameters": parameter_count,
                     "edges": sum(len(value["edges"]) for value in targets.values()),
                     "documents": sum(len(value["documents"]) for value in targets.values()),
+                    "network_hosts": sum(len(value["network_hosts"]) for value in targets.values()),
+                    "services": sum(len(host["services"]) for value in targets.values() for host in value["network_hosts"]),
                 },
                 "targets": targets,
             }

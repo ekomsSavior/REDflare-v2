@@ -3,5 +3,8 @@
     "127.0.0.1",
     "localhost"
   ],
-  "allow_public": false
+  "allowed_networks": ["10.0.0.0/24", "192.168.1.0/24"],
+  "allow_public": false,
+  "scan_ports": {"include": [22, 80, 443, 445], "exclude": []},
+  "discovery_depth": "standard"
 }

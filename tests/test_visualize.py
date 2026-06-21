@@ -24,6 +24,7 @@ class VisualizeTests(unittest.TestCase):
                     "summary": {"targets": 1},
                     "targets": {
                         "https://example.test": {
+                            "network_hosts": [{"address": "127.0.0.1", "roles": [{"role": "web-server", "confidence": 0.9}], "services": [{"port": 443, "protocol": "tcp", "service": "https", "product": "nginx", "version": "1.24.0"}]}],
                             "endpoints": [
                                 {
                                     "url": "https://example.test/api/users",
@@ -84,9 +85,9 @@ class VisualizeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             graph = build_visual_graph(self.make_run(directory))
             types = {node["type"] for node in graph["nodes"]}
-            self.assertTrue({"run", "target", "endpoint", "parameter", "document", "module", "exposure", "standard", "cve"} <= types)
+            self.assertTrue({"run", "target", "network_host", "service", "technology", "endpoint", "parameter", "document", "module", "exposure", "standard", "cve"} <= types)
             relations = {edge["type"] for edge in graph["edges"]}
-            self.assertTrue({"contains", "serves", "accepts", "executed", "reported", "exposes", "maps_to"} <= relations)
+            self.assertTrue({"contains", "resolves_to", "exposes_service", "identified_as", "serves", "accepts", "executed", "reported", "exposes", "maps_to"} <= relations)
             self.assertEqual(graph["metadata"]["severity_counts"]["critical"], 1)
 
     def test_loopback_server_serves_ui_and_graph(self):
