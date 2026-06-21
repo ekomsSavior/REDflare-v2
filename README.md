@@ -2,6 +2,9 @@
 
 REDflare v2 is a scope-first orchestration framework for authorized web application reconnaissance and security assessment. It adds a shared attack-surface graph and a standards-backed test registry while preserving the original REDflare project unchanged.
 
+<img width="457" height="105" alt="Screenshot_20260621_073244-1" src="https://github.com/user-attachments/assets/a98db72d-e00c-4651-a68a-fefb5b8d983b" />
+
+
 ## What v2 adds
 
 - A bounded same-origin crawler for links, forms, and execution paths
