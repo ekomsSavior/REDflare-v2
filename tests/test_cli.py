@@ -45,6 +45,13 @@ class CLITests(unittest.TestCase):
         self.assertIn("--github-repo", arguments)
         self.assertIn("https://example.test", arguments)
 
+    @patch("redflare.interactive.recent_runs", return_value=[])
+    @patch("builtins.input", side_effect=["4", "file:///tmp/run_fixture", "8765", "yes"])
+    def test_interactive_menu_builds_visualizer_command(self, _, __):
+        arguments = interactive_arguments()
+        self.assertEqual(arguments[:2], ["visualize", "file:///tmp/run_fixture"])
+        self.assertNotIn("--no-browser", arguments)
+
 
 if __name__ == "__main__":
     unittest.main()

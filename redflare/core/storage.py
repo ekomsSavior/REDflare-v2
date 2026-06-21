@@ -2,12 +2,23 @@ from __future__ import annotations
 
 import html
 import json
+import re
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
 from .models import Finding, ModuleResult
+
+
+def target_run_id(targets: Iterable[object]) -> str:
+    values = list(targets)
+    first = values[0] if values else None
+    authority = str(getattr(first, "authority", None) or getattr(first, "host", None) or "assessment")
+    slug = re.sub(r"[^A-Za-z0-9._-]+", "_", authority).strip("._-") or "assessment"
+    extra = f"_plus_{len(values) - 1}" if len(values) > 1 else ""
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"scan_{slug}{extra}_{stamp}"
 
 
 class RunStore:
@@ -63,6 +74,9 @@ class RunStore:
             "by_category": count_by(finding.category for finding in findings),
             "sensitive_exposures": sum(
                 finding.category == "sensitive-data-exposure" for finding in findings
+            ),
+            "known_cves": sum(
+                finding.category == "known-vulnerable-component" for finding in findings
             ),
             "attack_surface": (surface_graph or {}).get("summary", {}),
         }
@@ -136,6 +150,7 @@ def render_html(
             f"<h4>[{html.escape(finding.severity.upper())}] {html.escape(finding.title)}</h4>"
             f"<p><strong>Test ID:</strong> {html.escape(finding.test_id or 'unmapped')}</p>"
             f"<p>{html.escape(finding.description)}</p>"
+            f"{render_reference_links(finding)}"
             f"<pre>{html.escape(json.dumps(finding.evidence, indent=2, default=str))}</pre>"
             f"<p><strong>Remediation:</strong> {html.escape(finding.remediation or 'Review and remediate based on verified impact.')}</p>"
             "</article>"
@@ -171,3 +186,20 @@ table{{border-collapse:collapse;width:100%}}th,td{{padding:.6rem;border:1px soli
 {''.join(assessments)}
 <section class="summary"><h2>Assessment artifacts</h2><ul><li><code>attack_surface.json</code></li><li><code>test_registry.json</code></li></ul></section>
 <section class="summary"><h2>Consolidated findings</h2><table><thead><tr><th>Severity</th><th>Test ID</th><th>Module</th><th>Target</th><th>Finding</th><th>Description</th></tr></thead><tbody>{''.join(rows)}</tbody></table></section></body></html>"""
+
+
+def render_reference_links(finding: Finding) -> str:
+    links = []
+    seen = set()
+    for family, references in finding.standards.items():
+        for reference in references:
+            url = str(reference.get("url") or "")
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            label = str(reference.get("id") or family)
+            links.append(
+                f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener noreferrer">'
+                f'{html.escape(label)}</a>'
+            )
+    return f"<p><strong>References:</strong> {' &middot; '.join(links)}</p>" if links else ""

@@ -68,6 +68,11 @@ def reference(family: str, identifier: str) -> dict[str, str]:
 
 TEST_REGISTRY: tuple[TestDefinition, ...] = (
     TestDefinition(
+        "RFV2-COMP-001", "Correlate disclosed component versions with known vulnerabilities",
+        "cve_intelligence", "known-vulnerable-component",
+        ("WSTG-INFO-05",), ("v5.0.0-14.2.1",), ("CWE-1104",), ("API9:2023",),
+    ),
+    TestDefinition(
         "RFV2-MAP-001", "Build application entry-point inventory", "application_mapping", "attack-surface-inventory",
         ("WSTG-INFO-06", "WSTG-INFO-07"), ("v5.0.0-8.1.1", "v5.0.0-13.4.5"), ("CWE-1059",), ("API9:2023",),
     ),
@@ -118,7 +123,11 @@ def enrich_finding(finding: "Finding") -> "Finding":
     definition = _BY_KEY.get((finding.module, finding.category))
     if definition:
         finding.test_id = definition.id
+        dynamic = finding.standards
         finding.standards = definition.references()
+        for family, references in dynamic.items():
+            existing = {item.get("id") for item in finding.standards.setdefault(family, [])}
+            finding.standards[family].extend(item for item in references if item.get("id") not in existing)
     return finding
 
 

@@ -10,6 +10,7 @@ const TYPE_STYLE = {
   document:  { color: "#4fd18b", size: 12, icon: "≡", order: 3 },
   finding:   { color: "#e8c547", size: 12, icon: "!", order: 4 },
   exposure:  { color: "#ff4055", size: 15, icon: "!", order: 4 },
+  cve:       { color: "#ff874d", size: 11, icon: "C", order: 5 },
   standard:  { color: "#8491a3", size: 9,  icon: "§", order: 5 },
 };
 const SEVERITY_COLOR = { critical: "#ff4055", high: "#ff874d", medium: "#e8c547", low: "#58a6ff", info: "#8491a3" };
@@ -431,13 +432,15 @@ function renderDetails(node) {
   type.className = `pill ${node.severity || ""}`;
 
   const links = document.getElementById("detail-links"); links.replaceChildren();
-  for (const candidate of findUrls(node.info)) {
-    const anchor = htmlEl("a", "pill", "open reference");
-    anchor.href = candidate; anchor.target = "_blank"; anchor.rel = "noopener noreferrer";
-    links.append(anchor);
-  }
+  const urls = findUrls(node.info);
+  urls.slice(0, 8).forEach((candidate, index) => links.append(referenceLink(candidate, index)));
+  if (urls.length > 8) links.append(htmlEl("span", "link-overflow", `+${urls.length - 8} more below`));
+  const copyAll = htmlEl("button", "copy-button", "copy evidence");
+  copyAll.type = "button";
+  copyAll.addEventListener("click", () => copyText(JSON.stringify(node.info || {}, null, 2), copyAll));
+  links.append(copyAll);
   const props = document.getElementById("detail-properties"); props.replaceChildren();
-  appendProperties(props, node.info || {});
+  appendPropertyGroups(props, node.info || {});
   const relations = document.getElementById("detail-relations"); relations.replaceChildren();
   for (const edge of state.edges.filter(edge => edge.source === node.id || edge.target === node.id)) {
     const otherId = edge.source === node.id ? edge.target : edge.source;
@@ -449,9 +452,45 @@ function renderDetails(node) {
   }
 }
 
+function referenceLink(candidate, index = 0) {
+  const url = new URL(candidate);
+  let label = url.hostname.replace(/^www\./, "");
+  if (url.hostname.includes("nvd.nist.gov")) label = "NVD record";
+  else if (url.hostname.includes("cve.org")) label = "CVE record";
+  else if (url.hostname.includes("cwe.mitre.org")) label = "CWE / MITRE";
+  else if (url.hostname.includes("owasp.org")) label = "OWASP reference";
+  else if (index > 0) label = truncate(label, 20);
+  const anchor = htmlEl("a", "pill", label);
+  anchor.href = candidate; anchor.target = "_blank"; anchor.rel = "noopener noreferrer";
+  anchor.title = candidate;
+  return anchor;
+}
+
+function appendPropertyGroups(parent, info) {
+  if (!info || typeof info !== "object" || Array.isArray(info)) return appendProperties(parent, info);
+  const entries = Object.entries(info);
+  for (const [key, value] of entries) {
+    if (value && typeof value === "object") {
+      const details = htmlEl("details", "property-group");
+      details.open = ["evidence", "references", "standards"].includes(key.toLowerCase());
+      const summary = htmlEl("summary", "property-group-title");
+      summary.append(htmlEl("span", "", labelFor(key)), htmlEl("span", "group-count", collectionCount(value)));
+      details.append(summary);
+      const content = htmlEl("div", "property-group-content");
+      if (Array.isArray(value) && value.every(item => typeof item === "string" && /^https?:\/\//i.test(item))) appendUrlPages(content, value);
+      else appendProperties(content, value);
+      details.append(content); parent.append(details);
+    } else appendProperties(parent, value, key);
+  }
+}
+
 function appendProperties(parent, value, prefix = "") {
   if (value === null || value === undefined) return;
   if (Array.isArray(value)) {
+    if (value.every(item => typeof item === "string" && /^https?:\/\//i.test(item))) {
+      appendUrlPages(parent, value);
+      return;
+    }
     value.forEach((item, index) => appendProperties(parent, item, `${prefix}[${index + 1}]`));
     return;
   }
@@ -460,15 +499,60 @@ function appendProperties(parent, value, prefix = "") {
     return;
   }
   const row = htmlEl("div", "property");
-  row.append(htmlEl("div", "property-key", prefix), htmlEl("div", "property-value", String(value)));
+  const heading = htmlEl("div", "property-key");
+  heading.append(htmlEl("span", "", prefix));
+  const copy = htmlEl("button", "property-copy", "copy");
+  copy.type = "button"; copy.addEventListener("click", () => copyText(String(value), copy)); heading.append(copy);
+  const rendered = htmlEl("div", "property-value");
+  if (typeof value === "string" && /^https?:\/\//i.test(value)) rendered.append(referenceLink(value));
+  else rendered.textContent = String(value);
+  row.append(heading, rendered);
   parent.append(row);
+}
+
+function appendUrlPages(parent, values) {
+  const unique = [...new Set(values)];
+  const pageSize = 20; let shown = Math.min(pageSize, unique.length);
+  const list = htmlEl("div", "url-list");
+  const paint = () => {
+    list.replaceChildren();
+    unique.slice(0, shown).forEach((url, index) => {
+      const row = htmlEl("div", "url-row");
+      row.append(htmlEl("span", "url-index", String(index + 1)), referenceLink(url, index));
+      const copy = htmlEl("button", "property-copy", "copy"); copy.type = "button";
+      copy.addEventListener("click", () => copyText(url, copy)); row.append(copy); list.append(row);
+    });
+  };
+  paint(); parent.append(list);
+  if (unique.length > shown) {
+    const more = htmlEl("button", "load-more", `show next ${Math.min(pageSize, unique.length - shown)} of ${unique.length}`);
+    more.type = "button"; more.addEventListener("click", () => {
+      shown = Math.min(unique.length, shown + pageSize); paint();
+      more.textContent = shown < unique.length ? `show next ${Math.min(pageSize, unique.length - shown)} of ${unique.length}` : "all URLs shown";
+      more.disabled = shown >= unique.length;
+    }); parent.append(more);
+  }
+}
+
+function collectionCount(value) {
+  if (Array.isArray(value)) return `${value.length} items`;
+  if (value && typeof value === "object") return `${Object.keys(value).length} fields`;
+  return "";
+}
+
+async function copyText(value, button) {
+  try {
+    await navigator.clipboard.writeText(value);
+    const previous = button.textContent; button.textContent = "copied";
+    setTimeout(() => { button.textContent = previous; }, 1100);
+  } catch (_) { button.textContent = "copy failed"; }
 }
 
 function findUrls(value, found = new Set()) {
   if (typeof value === "string" && /^https?:\/\//i.test(value)) found.add(value);
   else if (Array.isArray(value)) value.forEach(item => findUrls(item, found));
   else if (value && typeof value === "object") Object.values(value).forEach(item => findUrls(item, found));
-  return [...found].slice(0, 6);
+  return [...found];
 }
 
 function showTooltip(event, node) {

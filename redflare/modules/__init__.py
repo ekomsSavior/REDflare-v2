@@ -4,6 +4,7 @@ from .mapping import ApplicationMappingModule
 from .passive import PassiveReconModule
 from .paths import PathDiscoveryModule
 from .surface import SurfaceAnalysisModule
+from .vulnerabilities import CVEIntelligenceModule
 
 __all__ = [
     "ApplicationMappingModule",
@@ -12,4 +13,5 @@ __all__ = [
     "PathDiscoveryModule",
     "SurfaceAnalysisModule",
     "SensitiveExposureModule",
+    "CVEIntelligenceModule",
 ]

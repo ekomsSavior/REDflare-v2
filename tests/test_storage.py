@@ -2,10 +2,15 @@ import tempfile
 import unittest
 
 from redflare.core.models import Finding
-from redflare.core.storage import RunStore, deduplicate_findings
+from redflare.core.models import Target
+from redflare.core.storage import RunStore, deduplicate_findings, target_run_id
 
 
 class StorageTests(unittest.TestCase):
+    def test_target_run_name_is_human_readable(self):
+        value = target_run_id([Target("https://example.test", "example.test", "https", 443)])
+        self.assertRegex(value, r"^scan_example\.test_\d{8}_\d{6}$")
+
     def test_run_folders_do_not_collide(self):
         with tempfile.TemporaryDirectory() as directory:
             first = RunStore(directory, "run_test")

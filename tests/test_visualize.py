@@ -8,7 +8,7 @@ from importlib.resources import files
 from pathlib import Path
 from urllib.request import urlopen
 
-from redflare.visualize import VisualServer, build_visual_graph
+from redflare.visualize import VisualServer, build_visual_graph, resolve_run_directory
 
 
 class VisualizeTests(unittest.TestCase):
@@ -56,7 +56,8 @@ class VisualizeTests(unittest.TestCase):
                 "value_preview": "ghp_…7890",
             },
             "standards": {
-                "CWE": [{"id": "CWE-798", "url": "https://cwe.mitre.org/data/definitions/798.html"}]
+                "CWE": [{"id": "CWE-798", "url": "https://cwe.mitre.org/data/definitions/798.html"}],
+                "CVE": [{"id": "CVE-2026-12345", "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-12345"}],
             },
         }
         (root / "findings.jsonl").write_text(json.dumps(finding) + "\n", encoding="utf-8")
@@ -83,7 +84,7 @@ class VisualizeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             graph = build_visual_graph(self.make_run(directory))
             types = {node["type"] for node in graph["nodes"]}
-            self.assertTrue({"run", "target", "endpoint", "parameter", "document", "module", "exposure", "standard"} <= types)
+            self.assertTrue({"run", "target", "endpoint", "parameter", "document", "module", "exposure", "standard", "cve"} <= types)
             relations = {edge["type"] for edge in graph["edges"]}
             self.assertTrue({"contains", "serves", "accepts", "executed", "reported", "exposes", "maps_to"} <= relations)
             self.assertEqual(graph["metadata"]["severity_counts"]["critical"], 1)
@@ -109,6 +110,12 @@ class VisualizeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
                 build_visual_graph(directory)
+
+    def test_accepts_local_file_url_for_run_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = self.make_run(directory)
+            self.assertEqual(resolve_run_directory(run.as_uri()), run.resolve())
+            self.assertEqual(build_visual_graph(run.as_uri())["metadata"]["run_id"], "run_visual")
 
     def test_visual_assets_keep_node_clicks_on_the_node(self):
         app = files("redflare.web").joinpath("app.js").read_text(encoding="utf-8")

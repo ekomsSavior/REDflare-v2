@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -9,11 +10,11 @@ from . import __version__
 from .core.scope import ScopeError, ScopePolicy, normalize_target
 from .core.standards import registry_document
 from .core.runner import Runner
-from .core.storage import RunStore
+from .core.storage import RunStore, target_run_id
 from .modules.adapters import adapter_health, run_reaper
 from .modules.base import ModuleContext
 from .profiles import PROFILES, build_modules
-from .interactive import interactive_arguments
+from .interactive import interactive_arguments, yes_no
 from .ui import LiveConsole
 from .visualize import VisualServer
 
@@ -27,14 +28,15 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("doctor", help="Check source-tool adapters")
     sub.add_parser("tests", help="List stable test IDs and standards mappings")
     visualize = sub.add_parser("visualize", help="Open the local visual investigation console for a run")
-    visualize.add_argument("run_directory", help="REDflare run directory containing attack_surface.json")
+    visualize.add_argument("run_directory", help="REDflare run directory or local file:/// URL")
     visualize.add_argument("--port", type=int, default=8765, help="Loopback port (0 chooses an available port)")
     visualize.add_argument("--no-browser", action="store_true", help="Do not open the default browser")
 
     intel = sub.add_parser("intel", help="Run repository secret intelligence through REAPER")
     intel.add_argument("--repo", action="append", required=True, help="Authorized GitHub repository URL; repeatable")
     intel.add_argument("--authorized", action="store_true", help="Acknowledge authorization for every repository")
-    intel.add_argument("--output", default="runs", help="Base run output directory")
+    default_runs = str(Path(os.environ.get("REDFLARE_HOME", Path.cwd())) / "runs")
+    intel.add_argument("--output", default=default_runs, help="Base run output directory")
 
     scan = sub.add_parser("scan", help="Run an authorized assessment")
     scan.add_argument("targets", nargs="*", help="HTTP(S) URLs or hostnames")
@@ -43,7 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--authorized", action="store_true", help="Acknowledge explicit authorization for every target")
     scan.add_argument("--allow-public", action="store_true", help="Permit authorized public targets")
     scan.add_argument("--profile", choices=sorted(PROFILES), default="quick")
-    scan.add_argument("--output", default="runs", help="Base run output directory")
+    scan.add_argument("--output", default=default_runs, help="Base run output directory")
     scan.add_argument("--wordlist", help="Path wordlist for the web profile")
     scan.add_argument("--max-paths", type=int, default=100)
     scan.add_argument("--max-crawl-pages", type=int, default=30)
@@ -53,6 +55,8 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--max-exposure-endpoints", type=int, default=75)
     scan.add_argument("--max-exposure-findings", type=int, default=100)
     scan.add_argument("--max-exposure-body-bytes", type=int, default=2_000_000)
+    scan.add_argument("--max-cve-products", type=int, default=12, help="Maximum exact product/version fingerprints to correlate with NVD")
+    scan.add_argument("--max-cves-per-product", type=int, default=100, help="Maximum NVD CVEs retained per fingerprint")
     scan.add_argument(
         "--graphql-introspection",
         action="store_true",
@@ -66,7 +70,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    if argv is None and len(sys.argv) == 1:
+    guided = argv is None and len(sys.argv) == 1
+    if guided:
         argv = interactive_arguments()
         if argv is None:
             return 0
@@ -83,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "visualize":
         try:
-            server = VisualServer(Path(args.run_directory), max(0, args.port))
+            server = VisualServer(args.run_directory, max(0, args.port))
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             print(f"Visualization error: {exc}", file=sys.stderr)
             return 2
@@ -130,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Scope error: {exc}", file=sys.stderr)
         return 2
 
-    store = RunStore(args.output)
+    store = RunStore(args.output, target_run_id(targets))
     console = LiveConsole()
     context = ModuleContext(
         run_id=store.run_id,
@@ -146,6 +151,8 @@ def main(argv: list[str] | None = None) -> int:
         max_exposure_endpoints=max(1, args.max_exposure_endpoints),
         max_exposure_findings=max(1, args.max_exposure_findings),
         max_exposure_body_bytes=max(1_024, args.max_exposure_body_bytes),
+        max_cve_products=max(1, args.max_cve_products),
+        max_cves_per_product=max(1, args.max_cves_per_product),
         graphql_introspection=args.graphql_introspection,
         allow_public=args.allow_public,
         reporter=console.emit,
@@ -159,4 +166,9 @@ def main(argv: list[str] | None = None) -> int:
         (store.root / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     console.final_report(summary, results, store.root)
     intel_ok = not args.github_repo or summary["repository_intelligence"]["status"] == "completed"
+    if guided and yes_no(f"Open this run in the visual console now ({store.root.name})", True):
+        try:
+            VisualServer(store.root, 8765).serve(open_browser=True)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"Visualization error: {exc}", file=sys.stderr)
     return 0 if summary["errors"] == 0 and intel_ok else 1

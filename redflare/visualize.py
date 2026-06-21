@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 
 def _stable_id(kind: str, value: str) -> str:
@@ -46,8 +46,18 @@ def _canonical_url(value: str) -> str:
     return f"{parsed.scheme.lower()}://{parsed.netloc.lower()}{parsed.path or '/'}"
 
 
+def resolve_run_directory(value: str | Path) -> Path:
+    raw = str(value).strip().strip('"\'')
+    parsed = urlsplit(raw)
+    if parsed.scheme == "file":
+        if parsed.netloc not in {"", "localhost"}:
+            raise ValueError("remote file URLs are not supported; use a local run directory")
+        raw = unquote(parsed.path)
+    return Path(raw).expanduser().resolve()
+
+
 def build_visual_graph(run_directory: str | Path) -> dict[str, Any]:
-    root = Path(run_directory).expanduser().resolve()
+    root = resolve_run_directory(run_directory)
     if not root.is_dir():
         raise ValueError(f"run directory does not exist: {root}")
     if not (root / "attack_surface.json").exists() and not (root / "findings.jsonl").exists():
@@ -196,7 +206,7 @@ def build_visual_graph(run_directory: str | Path) -> dict[str, Any]:
                         {
                             "id": _stable_id("standard", family + "\x00" + identifier),
                             "label": identifier,
-                            "type": "standard",
+                            "type": "cve" if family == "CVE" else "standard",
                             "info": {"family": family, **reference},
                         }
                     )
@@ -229,11 +239,11 @@ def build_visual_graph(run_directory: str | Path) -> dict[str, Any]:
 
 @dataclass
 class VisualServer:
-    run_directory: Path
+    run_directory: str | Path
     port: int = 8765
 
     def __post_init__(self) -> None:
-        self.run_directory = self.run_directory.expanduser().resolve()
+        self.run_directory = resolve_run_directory(self.run_directory)
         self.graph = build_visual_graph(self.run_directory)
         self.assets = files("redflare.web")
         handler = self._handler()

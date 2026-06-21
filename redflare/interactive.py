@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+import json
+import os
+from datetime import datetime
+
 
 BANNER = r"""
  ██████╗ ███████╗██████╗ ███████╗██╗      █████╗ ██████╗ ███████╗
@@ -26,17 +31,78 @@ def yes_no(text: str, default: bool = False) -> bool:
     return value in {"y", "yes"}
 
 
+def recent_runs(limit: int = 10) -> list[Path]:
+    roots = [Path(os.environ.get("REDFLARE_HOME", Path.cwd())) / "runs"]
+    found: dict[Path, float] = {}
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for candidate in root.iterdir():
+            if candidate.is_dir() and ((candidate / "attack_surface.json").exists() or (candidate / "findings.jsonl").exists()):
+                resolved = candidate.resolve()
+                found[resolved] = max(found.get(resolved, 0), candidate.stat().st_mtime)
+    return [path for path, _ in sorted(found.items(), key=lambda item: item[1], reverse=True)[:limit]]
+
+
+def run_label(run: Path) -> str:
+    try:
+        manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        manifest = {}
+    targets = manifest.get("targets") or []
+    names = [str(item.get("host") or item.get("url") or "") for item in targets if isinstance(item, dict)]
+    target = names[0] if names else run.name
+    if len(names) > 1:
+        target += f" +{len(names) - 1}"
+    created = str(manifest.get("created_at") or "")
+    try:
+        when = datetime.fromisoformat(created).astimezone().strftime("%b %d %H:%M")
+    except ValueError:
+        when = datetime.fromtimestamp(run.stat().st_mtime).strftime("%b %d %H:%M")
+    try:
+        summary = json.loads((run / "summary.json").read_text(encoding="utf-8"))
+        findings = f" · {int(summary.get('findings', 0))} findings"
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        findings = ""
+    return f"{target} · {when}{findings}"
+
+
+def visualize_arguments() -> list[str] | None:
+    runs = recent_runs()
+    print("\nVisual investigation console")
+    if runs:
+        print("Recent REDflare runs:")
+        for index, run in enumerate(runs, start=1):
+            print(f"{index}) {run_label(run)}")
+            print(f"   {run}")
+        selection = prompt("Choose a run number or paste a run path / file URL", "1")
+        run = str(runs[int(selection) - 1]) if selection.isdigit() and 0 < int(selection) <= len(runs) else selection
+    else:
+        run = prompt("Run directory or file:/// URL")
+    if not run:
+        print("No run selected.")
+        return None
+    arguments = ["visualize", run, "--port", prompt("Local visualizer port", "8765")]
+    if not yes_no("Open the visualizer in your browser", True):
+        arguments.append("--no-browser")
+    print("\nOpening the REDflare visual investigation console...\n")
+    return arguments
+
+
 def interactive_arguments() -> list[str] | None:
     print(BANNER)
     print("1) Full assessment pipeline (recommended)")
     print("2) Web assessment (native modules)")
     print("3) Quick reconnaissance")
-    print("4) Tool and adapter health check")
-    print("5) Exit")
+    print("4) Visualize a completed run")
+    print("5) Tool and adapter health check")
+    print("6) Exit")
     choice = prompt("Select an option", "1")
     if choice == "4":
-        return ["doctor"]
+        return visualize_arguments()
     if choice == "5":
+        return ["doctor"]
+    if choice == "6":
         return None
     profile = {"1": "full", "2": "web", "3": "quick"}.get(choice)
     if not profile:
@@ -75,7 +141,7 @@ def interactive_arguments() -> list[str] | None:
         profile = "web"
     arguments.extend(["--profile", profile])
 
-    output = prompt("Base output directory", "runs")
+    output = prompt("Base output directory", str(Path(os.environ.get("REDFLARE_HOME", Path.cwd())) / "runs"))
     arguments.extend(["--output", output])
     arguments.extend(["--workers", prompt("Targets to process concurrently", "1")])
     arguments.extend(["--timeout", prompt("Request timeout in seconds", "10")])

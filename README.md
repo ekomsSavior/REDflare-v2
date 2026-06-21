@@ -15,9 +15,10 @@ REDflare v2 is a scope-first orchestration framework for authorized web applicat
 - Explicit opt-in GraphQL schema introspection with bounded response sizes
 - Browser request/response ingestion from GATEkeeper reports
 - Sensitive-data exposure checks across HTML, JavaScript bundles, and mapped GET responses
+- Exact-version component fingerprinting with live NVD CVE correlation and CVSS context
 - Stable `RFV2-*` test IDs mapped to OWASP WSTG v4.2, ASVS 5.0.0, CWE, and OWASP API Security 2023
 - Per-run `attack_surface.json` and `test_registry.json` artifacts
-- Offline visual investigation console with force, tree, and radial graph layouts
+- Offline visual investigation console with CVE nodes, grouped evidence, URL pagination, and force/tree/radial layouts
 
 ## Current capabilities
 
@@ -75,6 +76,11 @@ Launch REDflare with no arguments for the guided interface:
 ./bin/redflare
 ```
 
+The main menu also discovers recent runs and launches the visual investigation
+console without requiring command-line flags. Both ordinary paths and local
+`file:///...` URLs are accepted.
+After a guided scan, REDflare offers to open that exact completed run immediately.
+
 The wizard walks through:
 
 1. Full, web, or quick assessment mode
@@ -90,7 +96,7 @@ Full mode runs the complete pipeline automatically for each target:
 ```text
 DNS/TLS → HTTP headers → surface/forms/redirects → application mapping
         → path discovery → GATEkeeper browser capture → noauth_finder
-        → sensitive-exposure analysis → correlation
+        → NVD CVE correlation → sensitive-exposure analysis → correlation
         → optional REAPER repository intelligence → unified report
 ```
 
@@ -126,11 +132,11 @@ The console binds only to `127.0.0.1`, reads existing run artifacts, and does no
 send assessment data to a cloud service. It includes:
 
 - Force-directed, hierarchy-tree, and radial layouts
-- Typed nodes for targets, endpoints, parameters, schemas, findings, exposures, and standards
+- Typed nodes for targets, endpoints, parameters, schemas, findings, exposures, CVEs, and standards
 - Search across URLs, evidence, parameters, severities, and test IDs
 - Per-layer filtering and connected-node highlighting
 - Zoom, pan, drag, fit-to-view, and keyboard-accessible node inspection
-- A safe evidence panel using the same masked data stored by REDflare
+- A grouped evidence panel with collapsible sections, deduplicated/paginated URLs, and copy controls
 
 Choose a different loopback port or suppress automatic browser launch:
 
@@ -194,11 +200,34 @@ Use a JSON scope file to prevent accidental target drift:
 
 | Profile | Modules |
 |---|---|
-| `quick` | passive recon, HTTP headers, and root-response exposure analysis |
+| `quick` | passive recon, HTTP headers, CVE correlation, and root-response exposure analysis |
 | `web` | quick plus surface analysis, application mapping, path discovery, and mapped-response exposure analysis |
 | `full` | web plus GATEkeeper and noauth_finder adapters |
 
 Both `web` and `full` include application mapping. The `full` profile additionally merges browser-observed network traffic into the shared graph.
+
+## CVE intelligence
+
+Every profile passively identifies exact component versions disclosed in HTTP
+headers, generator metadata, and common JavaScript/CSS asset names. Exact CPEs are
+correlated with the NVD CVE API 2.0. Product names without versions are retained as
+ordinary observations and do not produce speculative CVE findings.
+
+Matches include the CVE ID, NVD description and status, CVSS score/vector,
+fingerprint evidence, affected CPE, dates, and NVD/CVE/vendor references. They are
+printed live, saved in `findings.jsonl` and module data, rendered as clickable links
+in `report.html`, and represented as dedicated CVE nodes in the visual console.
+NVD-provided CISA Known Exploited Vulnerabilities fields are highlighted when present.
+
+Unauthenticated NVD access is deliberately paced to respect public API limits. For
+larger authorized portfolios, set an NVD API key before scanning:
+
+```bash
+export NVD_API_KEY="your-nvd-api-key"
+./bin/redflare scan https://authorized.example --authorized --allow-public --profile web
+```
+
+Use `--max-cve-products` and `--max-cves-per-product` to tune collection volume.
 
 ## Sensitive-data exposure checks
 
