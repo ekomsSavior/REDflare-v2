@@ -13,6 +13,7 @@ class HTTPResponse:
     status: int
     headers: dict[str, str]
     body: bytes
+    tls_verified: bool = True
 
 
 class ScopedRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -37,11 +38,12 @@ def request(
     data: bytes | None = None,
     headers: dict[str, str] | None = None,
     allowed_origin: tuple[str, int] | None = None,
+    verify_tls: bool = True,
 ) -> HTTPResponse:
     request_headers = {"User-Agent": "REDflare-v2/2.1 authorized-assessment"}
     request_headers.update(headers or {})
     req = urllib.request.Request(url, data=data, method=method, headers=request_headers)
-    context = ssl.create_default_context()
+    context = ssl.create_default_context() if verify_tls else ssl._create_unverified_context()
     try:
         if allowed_origin:
             opener = urllib.request.build_opener(
@@ -59,4 +61,5 @@ def request(
             status=int(response.status),
             headers={key.lower(): value for key, value in response.headers.items()},
             body=body,
+            tls_verified=verify_tls,
         )

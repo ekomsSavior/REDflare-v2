@@ -159,6 +159,8 @@ def interactive_arguments() -> list[str] | None:
         ports = prompt("Optional explicit TCP ports/ranges (blank uses selected depth)")
         if ports: arguments.extend(["--ports", ports])
         if yes_no("Authorize bounded protocol-specific enumeration checks", False): arguments.append("--service-enumeration")
+        if not yes_no("Continue assessment after recording TLS validation failures", True): arguments.append("--no-tls-continuation")
+        if not yes_no("Enumerate TLS 1.2-and-earlier cipher support on discovered TLS services", True): arguments.append("--no-tls-cipher-enumeration")
 
     if profile in {"web", "full"}:
         wordlist = prompt("Optional path wordlist")
@@ -173,6 +175,8 @@ def interactive_arguments() -> list[str] | None:
         arguments.extend(["--max-exposure-endpoints", prompt("Maximum responses to inspect for sensitive exposure", "75")])
 
     if profile == "full":
+        key_file = prompt("Optional NVD API key file (must be readable only by you)")
+        if key_file: arguments.extend(["--nvd-api-key-file", key_file])
         repositories = prompt(
             "Optional associated GitHub repositories as owner/repository or URLs (blank if none)"
         )

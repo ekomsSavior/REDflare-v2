@@ -68,7 +68,7 @@ class NativeBrowserRuntimeModule(Module):
 
     @staticmethod
     def _fallback(target: Target, context: ModuleContext, reason: str) -> dict:
-        response = request(target.url, context.timeout, max_body=500_000)
+        response = context.http_request(target.url, context.timeout, max_body=500_000)
         urls = context.surface_graph.request_urls(target.url)
         return {"engine": "native-http-fallback", "fallback_reason": reason, "target": target.url,
                 "final_url": response.url, "main_headers": response.headers,

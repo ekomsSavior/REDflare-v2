@@ -8,6 +8,7 @@ from .vulnerabilities import CVEIntelligenceModule
 from .browser import NativeBrowserRuntimeModule
 from .noauth import NativeNoAuthModule
 from .network import NetworkDiscoveryModule
+from .tls import TLSAssessmentModule
 
 __all__ = [
     "ApplicationMappingModule",
@@ -20,4 +21,5 @@ __all__ = [
     "NativeBrowserRuntimeModule",
     "NativeNoAuthModule",
     "NetworkDiscoveryModule",
+    "TLSAssessmentModule",
 ]

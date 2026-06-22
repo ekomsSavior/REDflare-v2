@@ -37,6 +37,7 @@ WSTG_URLS = {
     "WSTG-CONF-07": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/07-Test_HTTP_Strict_Transport_Security",
     "WSTG-ATHZ-02": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/05-Authorization_Testing/02-Testing_for_Bypassing_Authorization_Schema",
     "WSTG-CLNT-04": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/11-Client-side_Testing/04-Testing_for_Client-side_URL_Redirect",
+    "WSTG-CRYP-01": "https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/01-Testing_for_Weak_Transport_Layer_Security",
 }
 
 API_SECURITY_URLS = {
@@ -68,6 +69,18 @@ def reference(family: str, identifier: str) -> dict[str, str]:
 
 
 TEST_REGISTRY: tuple[TestDefinition, ...] = (
+    TestDefinition("RFV2-TLS-001", "Validate TLS certificate trust", "tls_assessment", "tls-certificate-trust",
+                   ("WSTG-CRYP-01",), ("v5.0.0-9.1.1",), ("CWE-295",), ("API8:2023",)),
+    TestDefinition("RFV2-TLS-002", "Validate TLS certificate hostname", "tls_assessment", "tls-hostname-mismatch",
+                   ("WSTG-CRYP-01",), ("v5.0.0-9.1.1",), ("CWE-297",), ("API8:2023",)),
+    TestDefinition("RFV2-TLS-003", "Identify expired or imminently expiring TLS certificates", "tls_assessment", "tls-certificate-expiry",
+                   ("WSTG-CRYP-01",), ("v5.0.0-9.1.1",), ("CWE-298",), ("API8:2023",)),
+    TestDefinition("RFV2-TLS-004", "Identify deprecated TLS protocol support", "tls_assessment", "tls-weak-protocol",
+                   ("WSTG-CRYP-01",), ("v5.0.0-9.2.1",), ("CWE-326",), ("API8:2023",)),
+    TestDefinition("RFV2-TLS-005", "Identify weak TLS cipher support", "tls_assessment", "tls-weak-cipher",
+                   ("WSTG-CRYP-01",), ("v5.0.0-9.2.2",), ("CWE-327",), ("API8:2023",)),
+    TestDefinition("RFV2-TLS-006", "Identify weak TLS certificate cryptography", "tls_assessment", "tls-weak-certificate-crypto",
+                   ("WSTG-CRYP-01",), ("v5.0.0-9.2.2",), ("CWE-326",), ("API8:2023",)),
     TestDefinition(
         "RFV2-NET-001", "Identify exposed network services and protocol-level authorization conditions",
         "network_discovery", "exposed-network-service",

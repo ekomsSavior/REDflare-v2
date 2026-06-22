@@ -127,7 +127,8 @@ class LiveConsole:
 
     def _module_assessment(self, result: ModuleResult, width: int) -> None:
         title = result.module.replace("_", " ").upper()
-        print(f"\n{title} ASSESSMENT — {result.target}", file=self.stream)
+        heading = title if title.endswith(" ASSESSMENT") else f"{title} ASSESSMENT"
+        print(f"\n{heading} — {result.target}", file=self.stream)
         print("─" * width, file=self.stream)
         print(
             f"Status: {result.status.upper()} | Duration: {result.duration_seconds:.2f}s | "

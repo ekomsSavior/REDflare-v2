@@ -1,3 +1,3 @@
 """REDflare v2 authorized assessment framework."""
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"

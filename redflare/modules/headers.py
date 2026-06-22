@@ -25,7 +25,7 @@ class HeaderModule(Module):
         result = ModuleResult(self.name, target.url)
         try:
             context.emit(target.url, self.name, "progress", f"Requesting {target.url}")
-            response = request(target.url, context.timeout, method="GET", max_body=200_000)
+            response = context.http_request(target.url, context.timeout, method="GET", max_body=200_000)
             missing = [header for header in SECURITY_HEADERS if header not in response.headers]
             result.observations.update(
                 {

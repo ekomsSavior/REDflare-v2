@@ -60,7 +60,7 @@ class SurfaceAnalysisModule(Module):
         result = ModuleResult(self.name, target.url)
         try:
             context.emit(target.url, self.name, "progress", "Fetching and parsing application surface")
-            response = request(target.url, context.timeout, max_body=1_000_000)
+            response = context.http_request(target.url, context.timeout, max_body=1_000_000)
             text = response.body.decode("utf-8", errors="replace")
             parser = SurfaceParser(response.url)
             parser.feed(text)

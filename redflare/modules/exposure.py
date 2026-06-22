@@ -145,7 +145,7 @@ class SensitiveExposureModule(Module):
                 break
             context.emit(target.url, self.name, "progress", f"Inspecting {endpoint}")
             try:
-                response = request(
+                response = context.http_request(
                     endpoint,
                     context.timeout,
                     max_body=context.max_exposure_body_bytes,

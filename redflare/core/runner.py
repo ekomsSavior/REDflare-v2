@@ -49,6 +49,9 @@ class Runner:
                         enrich_finding(finding)
                     results.append(result)
                     self.store.write_result(result)
+        transport = ModuleResult("transport_policy", "run", observations=self.context.transport_snapshot())
+        results.append(transport)
+        self.store.write_result(transport)
         correlated = correlate(self.store.run_id, results)
         for result in correlated:
             for finding in result.findings:

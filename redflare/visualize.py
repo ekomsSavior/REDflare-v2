@@ -124,6 +124,17 @@ def build_visual_graph(run_directory: str | Path) -> dict[str, Any]:
                 service_id = add_node({"id": _stable_id("service", f"{target}\x00{address}\x00{protocol}\x00{port}"),
                                        "label": f"{port}/{protocol} {service.get('service','unknown')}", "type": "service", "info": service})
                 service_ids[(target, address, port)] = service_id; add_edge(host_id, service_id, "exposes_service")
+                assessment = service.get("tls_assessment") or {}
+                certificate = assessment.get("certificate") or {}
+                fingerprint = str(certificate.get("sha256") or "")
+                if fingerprint:
+                    cert_id = add_node({"id": _stable_id("certificate", fingerprint),
+                                        "label": str(certificate.get("subject") or fingerprint[:16]),
+                                        "type": "certificate", "info": {**certificate, "trust": assessment.get("trust"),
+                                                                           "protocols": assessment.get("protocols"),
+                                                                           "negotiated": assessment.get("negotiated"),
+                                                                           "ciphers": assessment.get("ciphers")}})
+                    add_edge(service_id, cert_id, "presents_certificate")
                 product = str(service.get("product") or ""); version = str(service.get("version") or "")
                 if product:
                     tech_id = add_node({"id": _stable_id("technology", product + "\x00" + version), "label": f"{product} {version}".strip(),
@@ -188,6 +199,12 @@ def build_visual_graph(run_directory: str | Path) -> dict[str, Any]:
         )
         module_ids[(target, module)] = module_id
         add_edge(target_ids.get(target, run_node_id), module_id, "executed")
+        coverage_status = str((result.get("observations") or {}).get("coverage_status") or "")
+        if module == "cve_intelligence" and coverage_status in {"partial", "unavailable"}:
+            coverage_id = add_node({"id": _stable_id("coverage", target + "\x00" + coverage_status),
+                                    "label": f"CVE coverage {coverage_status}", "type": "coverage",
+                                    "severity": "medium", "info": result.get("observations") or {}})
+            add_edge(module_id, coverage_id, "coverage_state")
 
     standard_nodes: dict[tuple[str, str], str] = {}
     for finding in findings:

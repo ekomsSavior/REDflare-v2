@@ -31,6 +31,8 @@ class CLITests(unittest.TestCase):
             "1",                         # standard network discovery
             "",                          # default ports
             "no",                        # no service enumeration
+            "yes",                       # continue after TLS trust finding
+            "yes",                       # enumerate TLS ciphers
             "",                          # no wordlist
             "1",                         # rate
             "25",                        # max paths
@@ -38,6 +40,7 @@ class CLITests(unittest.TestCase):
             "2",                         # max crawl depth
             "no",                        # no GraphQL introspection
             "75",                        # max exposure endpoints
+            "",                          # no NVD key file
             "https://github.com/o/r",    # repository
         ],
     )

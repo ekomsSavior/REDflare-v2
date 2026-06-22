@@ -18,7 +18,7 @@ class NativeModuleTests(unittest.TestCase):
         with self.assertRaises(ValueError): normalize_repository("repository")
 
     @patch("redflare.modules.browser.NativeBrowserRuntimeModule._capture", side_effect=RuntimeError("fixture"))
-    @patch("redflare.modules.browser.request")
+    @patch("redflare.modules.http.request")
     def test_browser_runtime_has_native_fallback(self, get, _capture):
         get.return_value = HTTPResponse("https://example.test", 200, {}, b"fixture")
         with tempfile.TemporaryDirectory() as directory:
@@ -28,7 +28,7 @@ class NativeModuleTests(unittest.TestCase):
         self.assertEqual(result.observations["engine"], "native-http-fallback")
 
     @patch("redflare.modules.noauth.time.sleep")
-    @patch("redflare.modules.noauth.request")
+    @patch("redflare.modules.http.request")
     def test_noauth_module_emits_native_finding(self, get, _sleep):
         get.return_value = HTTPResponse("https://example.test/admin", 200, {"content-type": "text/html"}, b"admin console")
         with tempfile.TemporaryDirectory() as directory:

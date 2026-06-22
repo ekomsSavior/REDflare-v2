@@ -25,7 +25,7 @@ class NativeNoAuthModule(Module):
         for path in PATHS:
             url = urljoin(target.url.rstrip("/") + "/", path.lstrip("/"))
             try:
-                response = request(url, context.timeout, max_body=200_000, allowed_origin=(target.host, target.port))
+                response = context.http_request(url, context.timeout, max_body=200_000, allowed_origin=(target.host, target.port))
             except Exception:
                 continue
             body = response.body.decode("utf-8", errors="replace")

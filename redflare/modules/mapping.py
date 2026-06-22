@@ -86,7 +86,7 @@ class ApplicationMappingModule(Module):
                     continue
                 context.emit(target.url, self.name, "progress", f"Mapping {page_url}")
                 try:
-                    response = request(
+                    response = context.http_request(
                         page_url,
                         context.timeout,
                         max_body=1_000_000,
@@ -201,7 +201,7 @@ class ApplicationMappingModule(Module):
     ) -> None:
         for script_url in sorted(scripts)[: context.max_scripts]:
             try:
-                response = request(
+                response = context.http_request(
                     script_url,
                     context.timeout,
                     max_body=1_000_000,
@@ -234,7 +234,7 @@ class ApplicationMappingModule(Module):
             if not self._same_origin(target, schema_url):
                 continue
             try:
-                response = request(
+                response = context.http_request(
                     schema_url,
                     context.timeout,
                     max_body=2_000_000,
@@ -369,7 +369,7 @@ class ApplicationMappingModule(Module):
             if not self._same_origin(target, url):
                 continue
             try:
-                response = request(
+                response = context.http_request(
                     url,
                     context.timeout,
                     method="POST",

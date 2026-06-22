@@ -14,6 +14,7 @@ from .core.storage import RunStore, target_run_id
 from .modules.repository import run_repository_intelligence
 from .modules.base import ModuleContext
 from .modules.network import parse_ports
+from .modules.vulnerabilities import load_nvd_api_key
 from .profiles import PROFILES, build_modules
 from .interactive import interactive_arguments, yes_no
 from .ui import LiveConsole
@@ -58,6 +59,11 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--max-exposure-body-bytes", type=int, default=2_000_000)
     scan.add_argument("--max-cve-products", type=int, default=12, help="Maximum exact product/version fingerprints to correlate with NVD")
     scan.add_argument("--max-cves-per-product", type=int, default=100, help="Maximum NVD CVEs retained per fingerprint")
+    scan.add_argument("--nvd-api-key-file", help="0600 file containing an NVD API key (avoids command history exposure)")
+    scan.add_argument("--nvd-timeout", type=float, default=20.0)
+    scan.add_argument("--nvd-retries", type=int, default=3)
+    scan.add_argument("--no-tls-continuation", action="store_true", help="Do not retry HTTPS modules after recording a TLS trust failure")
+    scan.add_argument("--no-tls-cipher-enumeration", action="store_true", help="Skip native TLS 1.2-and-earlier cipher enumeration")
     scan.add_argument("--network-depth", choices=("basic", "standard", "extended", "complete"), default="standard")
     scan.add_argument("--ports", help="Explicit TCP ports, for example 22,80,443,8000-8100")
     scan.add_argument("--network-concurrency", type=int, default=64)
@@ -92,9 +98,17 @@ def main(argv: list[str] | None = None) -> int:
             browser = "native-playwright"
         except ImportError:
             browser = "native-http-fallback"
+        key_file = os.environ.get("NVD_API_KEY_FILE", "")
+        try:
+            nvd_key = load_nvd_api_key(key_file or None); nvd_error = ""
+        except (OSError, PermissionError) as exc:
+            nvd_key = ""; nvd_error = f"{type(exc).__name__}: {exc}"
         print(json.dumps({"standalone": True, "external_tools_required": False,
                           "capabilities": {"network_discovery": "native", "browser_runtime": browser, "unauthenticated_surface": "native",
-                                           "repository_intelligence": "native"}}, indent=2))
+                                           "tls_assessment": "native", "repository_intelligence": "native"},
+                          "nvd": {"api_key_configured": bool(nvd_key),
+                                  "key_source": "environment" if os.environ.get("NVD_API_KEY", "").strip() else "file" if nvd_key and key_file else "public-rate-limit",
+                                  "configuration_error": nvd_error}}, indent=2))
         return 0
     if args.command == "tests":
         print(json.dumps(registry_document(), indent=2))
@@ -170,6 +184,9 @@ def main(argv: list[str] | None = None) -> int:
         max_exposure_body_bytes=max(1_024, args.max_exposure_body_bytes),
         max_cve_products=max(1, args.max_cve_products),
         max_cves_per_product=max(1, args.max_cves_per_product),
+        nvd_api_key_file=args.nvd_api_key_file or os.environ.get("NVD_API_KEY_FILE"),
+        nvd_timeout=max(1.0, args.nvd_timeout),
+        nvd_retries=max(0, args.nvd_retries),
         network_depth=policy.discovery_depth or args.network_depth,
         network_ports=network_ports,
         network_allowed_networks=policy.allowed_networks,
@@ -178,6 +195,8 @@ def main(argv: list[str] | None = None) -> int:
         network_enumeration=args.service_enumeration,
         network_concurrency=max(1, args.network_concurrency),
         network_timeout=max(.1, args.network_timeout),
+        continue_after_tls_failure=not args.no_tls_continuation,
+        tls_cipher_enumeration=not args.no_tls_cipher_enumeration,
         graphql_introspection=args.graphql_introspection,
         allow_public=args.allow_public,
         reporter=console.emit,

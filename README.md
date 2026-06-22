@@ -9,6 +9,7 @@ REDflare v2 is a standalone, scope-first framework for authorized network and we
 
 - A bounded same-origin crawler for links, forms, and execution paths
 - Native TCP discovery, protocol identification, exact-version fingerprinting, and host-role inference
+- Native TLS trust, certificate, protocol, cipher, SNI, ALPN, compression, and certificate-reuse assessment across discovered TLS services
 - Form parameter, HTTP method, content type, and authentication-requirement mapping
 - JavaScript route extraction from same-origin script assets
 - OpenAPI 2.x and 3.x endpoint and parameter ingestion
@@ -24,7 +25,7 @@ REDflare v2 is a standalone, scope-first framework for authorized network and we
 
 - Optional JSON allowlist and explicit public-target gate
 - Per-run manifests, module output, JSONL findings, summaries, artifacts, and HTML reports
-- Native DNS/TLS reconnaissance
+- Native DNS and service-wide TLS assessment with controlled continuation after recorded trust failures
 - HTTP status, redirect, response metadata, and security-header analysis
 - Rate-limited path discovery with wildcard-response filtering
 - Correlation of related observations into higher-confidence findings
@@ -82,7 +83,7 @@ The wizard walks through:
 Full mode runs the complete pipeline automatically for each target:
 
 ```text
-Native TCP discovery → protocol identification → host-role inference → DNS/TLS
+Native TCP discovery → protocol identification → native TLS assessment → host-role inference
         → HTTP headers → surface/forms/redirects → application mapping
         → path discovery → native browser capture → native no-auth triage
         → NVD CVE correlation → sensitive-exposure analysis → correlation
@@ -210,6 +211,21 @@ The guided wizard offers Basic, Standard, Extended, and separately confirmed Com
 `artifacts/network_discovery/<target>/` as `port_scan.json`,
 `service_enumeration.json`, and `fingerprints.json`.
 
+## Native TLS assessment
+
+Every profile validates the target certificate before HTTP collection. Full Assessment also
+assesses every TLS service found by network discovery, including non-HTTP services such as
+LDAPS, SMTPS, IMAPS, POP3S, Docker TLS, and WinRM TLS. REDflare records certificate trust,
+self-signed/unknown-authority failures, SAN and hostname matching, validity, serial and
+SHA-256 fingerprint, public-key and signature properties, negotiated TLS/cipher/ALPN,
+compression, SNI behavior, TLS 1.0–1.3 support, TLS 1.2-and-earlier cipher support, weak
+suites, and certificate reuse.
+
+When enabled in the guided workflow, a trust failure is reported first and REDflare then
+continues against only that same authorized TLS origin. The `transport_policy` result lists
+every URL collected without trust validation. Use `--no-tls-continuation` to stop that retry
+behavior or `--no-tls-cipher-enumeration` to omit the cipher sweep.
+
 Protocol-aware identification currently covers HTTP/HTTPS and generic TLS, SSH, FTP,
 SMTP, POP3, IMAP, SMB2, RDP, MySQL, PostgreSQL, VNC, and explicitly authorized Redis
 PING. Additional known infrastructure ports are recorded with lower-confidence port
@@ -240,13 +256,22 @@ printed live, saved in `findings.jsonl` and module data, rendered as clickable l
 in `report.html`, and represented as dedicated CVE nodes in the visual console.
 NVD-provided CISA Known Exploited Vulnerabilities fields are highlighted when present.
 
-Unauthenticated NVD access is deliberately paced to respect public API limits. For
-larger authorized portfolios, set an NVD API key before scanning:
+Unauthenticated NVD access is deliberately paced to respect public API limits. REDflare
+retries temporary 429/5xx and timeout failures, honors `Retry-After`, caches successful CPE
+responses per run, preserves successful lookups, and reports CVE coverage as `complete`,
+`partial`, or `unavailable` rather than treating an outage as zero CVEs.
+
+For larger authorized portfolios, set an NVD API key before scanning:
 
 ```bash
 export NVD_API_KEY="your-nvd-api-key"
 ./bin/redflare scan https://authorized.example --authorized --allow-public --profile web
 ```
+
+For shell-history-safe configuration, put only the key in a user-readable file (`chmod 600`)
+and use `--nvd-api-key-file /path/to/key` or `NVD_API_KEY_FILE`. Tune outage behavior with
+`--nvd-timeout` and `--nvd-retries`; `./bin/redflare doctor` reports whether keyed or public
+NVD access is configured without printing the secret.
 
 Use `--max-cve-products` and `--max-cves-per-product` to tune collection volume.
 

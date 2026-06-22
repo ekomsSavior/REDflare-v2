@@ -30,7 +30,7 @@ class PathDiscoveryModule(Module):
         try:
             context.emit(target.url, self.name, "progress", f"Loading {len(paths)} paths; rate={context.rate:g}/s")
             random_path = "redflare-" + "".join(random.choice(string.ascii_lowercase) for _ in range(18))
-            baseline = request(urljoin(target.url.rstrip("/") + "/", random_path), context.timeout)
+            baseline = context.http_request(urljoin(target.url.rstrip("/") + "/", random_path), context.timeout)
             baseline_signature = (baseline.status, len(baseline.body))
             context.emit(target.url, self.name, "info", f"Wildcard baseline: status={baseline.status} bytes={len(baseline.body)}")
             hits = []
@@ -42,7 +42,7 @@ class PathDiscoveryModule(Module):
                     time.sleep(interval)
                 url = urljoin(target.url.rstrip("/") + "/", path.lstrip("/"))
                 try:
-                    response = request(url, context.timeout, max_body=250_000)
+                    response = context.http_request(url, context.timeout, max_body=250_000)
                 except Exception as exc:
                     result.errors.append(f"{url}: {type(exc).__name__}: {exc}")
                     continue

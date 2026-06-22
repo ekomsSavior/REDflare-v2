@@ -9,13 +9,14 @@ from redflare.modules import (
     NativeBrowserRuntimeModule,
     NativeNoAuthModule,
     NetworkDiscoveryModule,
+    TLSAssessmentModule,
 )
 
 
 PROFILES = {
-    "quick": [PassiveReconModule, HeaderModule, CVEIntelligenceModule, SensitiveExposureModule],
-    "web": [PassiveReconModule, HeaderModule, SurfaceAnalysisModule, ApplicationMappingModule, PathDiscoveryModule, CVEIntelligenceModule, SensitiveExposureModule],
-    "full": [NetworkDiscoveryModule, PassiveReconModule, HeaderModule, SurfaceAnalysisModule, ApplicationMappingModule, PathDiscoveryModule, NativeBrowserRuntimeModule, NativeNoAuthModule, CVEIntelligenceModule, SensitiveExposureModule],
+    "quick": [TLSAssessmentModule, PassiveReconModule, HeaderModule, CVEIntelligenceModule, SensitiveExposureModule],
+    "web": [TLSAssessmentModule, PassiveReconModule, HeaderModule, SurfaceAnalysisModule, ApplicationMappingModule, PathDiscoveryModule, CVEIntelligenceModule, SensitiveExposureModule],
+    "full": [NetworkDiscoveryModule, TLSAssessmentModule, PassiveReconModule, HeaderModule, SurfaceAnalysisModule, ApplicationMappingModule, PathDiscoveryModule, NativeBrowserRuntimeModule, NativeNoAuthModule, CVEIntelligenceModule, SensitiveExposureModule],
 }
 
 
