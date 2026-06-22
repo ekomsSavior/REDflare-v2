@@ -2,7 +2,8 @@
 
 REDflare v2 is a standalone, scope-first framework for authorized network and web application reconnaissance and security assessment. It combines native service discovery, application mapping, evidence correlation, and visual investigation in one standards-backed workflow.
 
-<img width="457" height="105" alt="Screenshot_20260621_073244-1" src="https://github.com/user-attachments/assets/a98db72d-e00c-4651-a68a-fefb5b8d983b" />
+<img width="451" height="83" alt="Screenshot_20260621_190741" src="https://github.com/user-attachments/assets/f1a57df0-ff4a-4c27-ba93-c118d429ddf6" />
+
 
 
 ## What v2 adds
